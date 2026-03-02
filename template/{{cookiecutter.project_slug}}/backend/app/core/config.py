@@ -323,6 +323,61 @@ class Settings(BaseSettings):
 {%- endif %}
 {%- endif %}
 
+{%- if cookiecutter.enable_rag %}
+
+    # === RAG (Retrieval Augmented Generation) ===
+    # Vector Database (Milvus)
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+    MILVUS_DATABASE: str = "default"
+    MILVUS_TOKEN: str = "root:Milvus"
+
+    # Embeddings
+    {%- if cookiecutter.use_openai_embeddings %}
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_API_KEY: str = ""
+    {%- elif cookiecutter.use_voyage_embeddings %}
+    EMBEDDING_MODEL: str = "voyage-3"
+    VOYAGE_API_KEY: str = ""
+    {%- elif cookiecutter.use_sentence_transformers %}
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    {%- else %}
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    {%- endif %}
+
+    # Chunking
+    RAG_CHUNK_SIZE: int = 512
+    RAG_CHUNK_OVERLAP: int = 50
+
+    # Retrieval
+    RAG_DEFAULT_COLLECTION: str = "documents"
+    RAG_TOP_K: int = 10
+
+    # Reranker
+    {%- if cookiecutter.enable_reranker == "cohere" or cookiecutter.use_cohere_reranker %}
+    COHERE_API_KEY: str = ""
+    {%- endif %}
+
+    # Document Parser
+    {%- if cookiecutter.document_parser == "llamaparse" or cookiecutter.use_llamaparse %}
+    LLAMAPARSE_API_KEY: str = ""
+    {%- endif %}
+
+    # Google Drive (optional, for document ingestion)
+    {%- if cookiecutter.enable_google_drive_ingestion %}
+    GOOGLE_DRIVE_CLIENT_ID: str | None = None
+    GOOGLE_DRIVE_CLIENT_SECRET: str | None = None
+    GOOGLE_DRIVE_REFRESH_TOKEN: str | None = None
+    {%- endif %}
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def MILVUS_URI(self) -> str:
+        """Build Milvus connection URI."""
+        return f"http://{self.MILVUS_HOST}:{self.MILVUS_PORT}"
+
+{%- endif %}
+
 {%- if cookiecutter.enable_cors %}
 
     # === CORS ===
