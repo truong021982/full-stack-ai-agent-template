@@ -2,7 +2,7 @@
 """User database model using SQLModel."""
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 {%- if cookiecutter.enable_session_management %}
 from typing import TYPE_CHECKING
 {%- endif %}
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 {%- endif %}
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User role enumeration.
 
     Roles hierarchy (higher includes lower permissions):
@@ -81,7 +81,7 @@ class User(TimestampMixin, SQLModel, table=True):
 """User database model."""
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 {%- if cookiecutter.enable_session_management %}
 from typing import TYPE_CHECKING
 {%- endif %}
@@ -98,7 +98,7 @@ if TYPE_CHECKING:
 {%- endif %}
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User role enumeration.
 
     Roles hierarchy (higher includes lower permissions):
@@ -159,7 +159,7 @@ class User(Base, TimestampMixin):
 """User database model using SQLModel."""
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 {%- if cookiecutter.enable_session_management %}
 from typing import TYPE_CHECKING
 {%- endif %}
@@ -175,7 +175,7 @@ if TYPE_CHECKING:
 {%- endif %}
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User role enumeration.
 
     Roles hierarchy (higher includes lower permissions):
@@ -237,7 +237,7 @@ class User(TimestampMixin, SQLModel, table=True):
 """User database model."""
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 {%- if cookiecutter.enable_session_management %}
 from typing import TYPE_CHECKING
 {%- endif %}
@@ -253,7 +253,7 @@ if TYPE_CHECKING:
 {%- endif %}
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User role enumeration.
 
     Roles hierarchy (higher includes lower permissions):
@@ -314,14 +314,14 @@ class User(Base, TimestampMixin):
 """User document model for MongoDB."""
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
 from beanie import Document
 from pydantic import EmailStr, Field
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User role enumeration.
 
     Roles hierarchy (higher includes lower permissions):
