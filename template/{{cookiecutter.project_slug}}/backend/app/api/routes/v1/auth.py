@@ -13,7 +13,7 @@ from app.api.deps import CurrentUser{% if cookiecutter.enable_session_management
 from app.core.exceptions import AuthenticationError
 from app.core.security import create_access_token, create_refresh_token, verify_token
 from app.schemas.token import RefreshTokenRequest, Token
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, UserRole
 
 router = APIRouter()
 
@@ -193,7 +193,7 @@ async def register(
         email=user.email,
         full_name=user.full_name,
         is_active=user.is_active,
-        role=user.role,
+        role=UserRole(user.role),
 {%- if cookiecutter.enable_oauth %}
         oauth_provider=user.oauth_provider,
 {%- endif %}
@@ -282,7 +282,7 @@ async def get_current_user_info(current_user: CurrentUser) -> Any:
         email=current_user.email,
         full_name=current_user.full_name,
         is_active=current_user.is_active,
-        role=current_user.role,
+        role=UserRole(current_user.role),
 {%- if cookiecutter.enable_oauth %}
         oauth_provider=current_user.oauth_provider,
 {%- endif %}
@@ -335,7 +335,19 @@ def register(
     Raises AlreadyExistsError if email is already registered.
     """
     user = user_service.register(user_in)
-    return user
+    return UserRead(
+        id=str(user.id),
+        email=user.email,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        role=UserRole(user.role),
+{%- if cookiecutter.enable_oauth %}
+        oauth_provider=user.oauth_provider,
+{%- endif %}
+        avatar_url=user.avatar_url,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
 
 
 @router.post("/refresh", response_model=Token)
@@ -417,7 +429,7 @@ def get_current_user_info(current_user: CurrentUser) -> Any:
         email=current_user.email,
         full_name=current_user.full_name,
         is_active=current_user.is_active,
-        role=current_user.role,
+        role=UserRole(current_user.role),
 {%- if cookiecutter.enable_oauth %}
         oauth_provider=current_user.oauth_provider,
 {%- endif %}
