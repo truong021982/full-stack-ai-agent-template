@@ -108,17 +108,16 @@ async def drop_collection(
     name: str,
     vector_store: VectorStoreSvc,
 {%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
-    rag_doc_svc: RAGDocumentSvc | None = None,
+    rag_doc_svc: RAGDocumentSvc,
 {%- endif %}
 {%- if cookiecutter.use_jwt %}
-    _: CurrentAdmin | None = None,
+    _: CurrentAdmin,
 {%- endif %}
 ) -> None:
     """Drop an entire collection — vectors and all SQL document records."""
     await vector_store.delete_collection(name)
 {%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
-    if rag_doc_svc:
-        await rag_doc_svc.delete_by_collection(name)
+    await rag_doc_svc.delete_by_collection(name)
 {%- endif %}
 
 
