@@ -77,7 +77,7 @@ export default function AdminRatingsPage() {
 
   const handleExport = () => {
     const params = new URLSearchParams({
-      format: exportFormat,
+      export_format: exportFormat,
       rating_filter: filter === "all" ? "" : filter === "positive" ? "1" : "-1",
       with_comments_only: commentsOnly.toString(),
     });
@@ -266,7 +266,7 @@ export default function AdminRatingsPage() {
                 <td className="p-4">
                   {rating.conversation_id && (
                     <Link
-                      href={`/chat?c=${rating.conversation_id}`}
+                      href={`/chat?id=${rating.conversation_id}`}
                       className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                     >
                       View conversation

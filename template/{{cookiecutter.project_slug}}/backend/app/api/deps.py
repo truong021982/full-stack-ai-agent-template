@@ -483,15 +483,15 @@ async def get_current_user_ws(
     websocket: WebSocket,
     token: str | None = Query(None, alias="token"),
     access_token: str | None = Cookie(None),
-) -> User | None:
+) -> User:
     """Get current user from WebSocket JWT token.
 
     Token can be passed either as:
     - Query parameter: ws://...?token=<jwt>
     - Cookie: access_token cookie (set by HTTP login)
 
-    On authentication failure, the WebSocket connection is closed with code 4001.
-    Returns None if authentication fails (caller should check and return early).
+    Raises:
+        AuthenticationError: If token is invalid or user not found.
     """
     from uuid import UUID
 
@@ -502,21 +502,21 @@ async def get_current_user_ws(
 
     if not auth_token:
         await websocket.close(code=4001, reason="Missing authentication token")
-        return None
+        raise AuthenticationError(message="Missing authentication token")
 
     payload = verify_token(auth_token)
     if payload is None:
         await websocket.close(code=4001, reason="Invalid or expired token")
-        return None
+        raise AuthenticationError(message="Invalid or expired token")
 
     if payload.get("type") != "access":
         await websocket.close(code=4001, reason="Invalid token type")
-        return None
+        raise AuthenticationError(message="Invalid token type")
 
     user_id = payload.get("sub")
     if user_id is None:
         await websocket.close(code=4001, reason="Invalid token payload")
-        return None
+        raise AuthenticationError(message="Invalid token payload")
 {%- if cookiecutter.use_postgresql %}
 
     from app.db.session import get_db_context
@@ -527,7 +527,7 @@ async def get_current_user_ws(
 
         if not user.is_active:
             await websocket.close(code=4001, reason="User account is disabled")
-            return None
+            raise AuthenticationError(message="User account is disabled")
 
         # Detach from session to avoid "instance not bound to a Session" errors
         # when the User object is used after the context manager exits
@@ -541,7 +541,7 @@ async def get_current_user_ws(
 
     if not user.is_active:
         await websocket.close(code=4001, reason="User account is disabled")
-        return None
+        raise AuthenticationError(message="User account is disabled")
 
     return user
 {%- elif cookiecutter.use_sqlite %}
@@ -554,7 +554,7 @@ async def get_current_user_ws(
 
         if not user.is_active:
             await websocket.close(code=4001, reason="User account is disabled")
-            return None
+            raise AuthenticationError(message="User account is disabled")
 
         # Detach from session for consistency with async behavior
         db.expunge(user)

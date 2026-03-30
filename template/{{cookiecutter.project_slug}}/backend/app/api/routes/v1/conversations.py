@@ -255,7 +255,7 @@ async def add_message(
 @router.post(
     "/{conversation_id}/messages/{message_id}/rate",
     response_model=MessageRatingRead,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 async def rate_message(
     conversation_id: UUID,
@@ -275,9 +275,9 @@ async def rate_message(
         data: Rating value (1 for like, -1 for dislike) and optional comment
 
     Returns:
-        201 Created for new ratings, 200 OK for updates
+        200 OK
     """
-    from fastapi.responses import Response
+    from fastapi.responses import JSONResponse
 
     rating, is_new = await rating_service.rate_message(
         conversation_id=conversation_id,
@@ -289,16 +289,16 @@ async def rate_message(
         return rating
     else:
         # Return 200 OK for updates (override default 201)
-        return Response(
-            content=rating.model_dump_json(),
+        return JSONResponse(
+            content=rating.model_dump(mode="json"),
             status_code=status.HTTP_200_OK,
-            media_type="application/json",
         )
 
 
 @router.delete(
     "/{conversation_id}/messages/{message_id}/rate",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def remove_rating(
     conversation_id: UUID,
@@ -519,7 +519,7 @@ def add_message(
 @router.post(
     "/{conversation_id}/messages/{message_id}/rate",
     response_model=MessageRatingRead,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 def rate_message(
     conversation_id: str,
@@ -539,9 +539,9 @@ def rate_message(
         data: Rating value (1 for like, -1 for dislike) and optional comment
 
     Returns:
-        201 Created for new ratings, 200 OK for updates
+        200 OK
     """
-    from fastapi.responses import Response
+    from fastapi.responses import JSONResponse
 
     rating, is_new = rating_service.rate_message(
         conversation_id=conversation_id,
@@ -553,16 +553,16 @@ def rate_message(
         return rating
     else:
         # Return 200 OK for updates (override default 201)
-        return Response(
-            content=rating.model_dump_json(),
+        return JSONResponse(
+            content=rating.model_dump(mode="json"),
             status_code=status.HTTP_200_OK,
-            media_type="application/json",
         )
 
 
 @router.delete(
     "/{conversation_id}/messages/{message_id}/rate",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 def remove_rating(
     conversation_id: str,
@@ -773,7 +773,7 @@ async def add_message(
 @router.post(
     "/{conversation_id}/messages/{message_id}/rate",
     response_model=MessageRatingRead,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 async def rate_message(
     conversation_id: str,
@@ -793,9 +793,9 @@ async def rate_message(
         data: Rating value (1 for like, -1 for dislike) and optional comment
 
     Returns:
-        201 Created for new ratings, 200 OK for updates
+        200 OK
     """
-    from fastapi.responses import Response
+    from fastapi.responses import JSONResponse
 
     rating, is_new = await rating_service.rate_message(
         conversation_id=conversation_id,
@@ -806,17 +806,16 @@ async def rate_message(
     if is_new:
         return rating
     else:
-        # Return 200 OK for updates (override default 201)
-        return Response(
-            content=rating.model_dump_json(),
+        return JSONResponse(
+            content=rating.model_dump(mode="json"),
             status_code=status.HTTP_200_OK,
-            media_type="application/json",
         )
 
 
 @router.delete(
     "/{conversation_id}/messages/{message_id}/rate",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def remove_rating(
     conversation_id: str,

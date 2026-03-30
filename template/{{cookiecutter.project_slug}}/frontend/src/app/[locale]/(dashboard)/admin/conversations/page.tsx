@@ -186,7 +186,7 @@ export default function AdminConversationsPage() {
                 </td>
                 <td className="p-4">
                   <Link
-                    href={`/chat?c=${conv.id}`}
+                    href={`/chat?id=${conv.id}`}
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                   >
                     View

@@ -31,7 +31,6 @@ async def create_rating(
     db: AsyncSession,
     *,
     message_id: UUID,
-    conversation_id: UUID,
     user_id: UUID,
     rating: int,
     comment: str | None = None,
@@ -101,7 +100,7 @@ async def list_ratings(
         query = query.where(MessageRating.rating == rating_filter)
 
     if with_comments_only:
-        query = query.where(MessageRating.comment.isnot(None))
+        query = query.where(MessageRating.comment.isnot(None), MessageRating.comment != "")
 
     # Count query
     count_query = select(func.count()).select_from(query.subquery())
@@ -204,7 +203,6 @@ def create_rating(
     db: Session,
     *,
     message_id: str,
-    conversation_id: str,
     user_id: str,
     rating: int,
     comment: str | None = None,
@@ -274,7 +272,7 @@ def list_ratings(
         query = query.where(MessageRating.rating == rating_filter)
 
     if with_comments_only:
-        query = query.where(MessageRating.comment.isnot(None))
+        query = query.where(MessageRating.comment.isnot(None), MessageRating.comment != "")
 
     # Count query
     count_query = select(func.count()).select_from(query.subquery())
@@ -398,7 +396,7 @@ async def create_rating(
         return_document=ReturnDocument.AFTER,
     )
 
-    return MessageRating.parse_obj(result)
+    return MessageRating.model_validate(result)
 
 
 async def update_rating(
@@ -423,7 +421,7 @@ async def update_rating(
         return_document=ReturnDocument.AFTER,
     )
 
-    return MessageRating.parse_obj(result)
+    return MessageRating.model_validate(result)
 
 
 async def delete_rating(rating: MessageRating) -> None:
@@ -452,7 +450,7 @@ async def list_ratings(
         query_dict["rating"] = rating_filter
 
     if with_comments_only:
-        query_dict["comment"] = {"$ne": None}
+        query_dict["comment"] = {"$nin": [None, ""]}
 
     # Count and fetch in parallel
     total_future = MessageRating.find(query_dict).count()

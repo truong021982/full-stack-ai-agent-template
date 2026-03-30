@@ -20,17 +20,94 @@ from typing import Any
 {%- endif %}
 
 import csv
-from datetime import datetime
+from collections.abc import Iterable
+from datetime import datetime, UTC
+from io import StringIO
+
 from fastapi import APIRouter, Query, status
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.deps import CurrentAdmin, MessageRatingSvc
+from app.core.exceptions import ValidationError
 from app.schemas.message_rating import (
     MessageRatingList,
+    MessageRatingWithDetails,
     RatingSummary,
 )
 
 router = APIRouter()
+
+
+def _write_csv_row(writer: Any, item: MessageRatingWithDetails) -> None:
+    """Write a single rating row to a CSV writer."""
+    writer.writerow([
+        str(item.id),
+        str(item.message_id),
+        str(item.conversation_id) if item.conversation_id else "",
+        str(item.user_id),
+        "Like" if item.rating == 1 else "Dislike",
+        item.comment or "",
+        item.message_content or "",
+        item.message_role or "",
+        item.user_email or "",
+        item.user_name or "",
+        item.created_at.isoformat() if item.created_at else "",
+        item.updated_at.isoformat() if item.updated_at else "",
+    ])
+
+
+def _generate_export_response(
+    chunks: Iterable[list[MessageRatingWithDetails]],
+    export_format: str,
+) -> StreamingResponse | JSONResponse:
+    """Build CSV or JSON export response for ratings.
+
+    Accepts an iterable of rating chunks (e.g. from a generator) to
+    avoid loading all ratings into memory at once.
+    """
+    fmt = export_format.lower()
+    if fmt not in ("json", "csv"):
+        raise ValidationError(
+            message="Invalid export format. Must be 'json' or 'csv'.",
+            details={"export_format": export_format},
+        )
+
+    now = datetime.now(UTC)
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+
+    if fmt == "csv":
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "ID", "Message ID", "Conversation ID", "User ID",
+            "Rating", "Comment", "Message Content", "Message Role",
+            "User Email", "User Name", "Created At", "Updated At"
+        ])
+        total = 0
+        for chunk in chunks:
+            for item in chunk:
+                _write_csv_row(writer, item)
+                total += 1
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="ratings_export_{timestamp}.csv"'}
+        )
+
+    # JSON: collect all items from chunks
+    all_items: list[MessageRatingWithDetails] = []
+    for chunk in chunks:
+        all_items.extend(chunk)
+
+    return JSONResponse(
+        content={
+            "ratings": [item.model_dump(mode="json") for item in all_items],
+            "total": len(all_items),
+            "exported_at": now.isoformat()
+        },
+        headers={"Content-Disposition": f'attachment; filename="ratings_export_{timestamp}.json"'}
+    )
 
 
 {%- if cookiecutter.use_postgresql %}
@@ -86,71 +163,24 @@ async def get_rating_summary(
 async def export_ratings(
     rating_service: MessageRatingSvc,
     admin_user: CurrentAdmin,
-    format: str = Query("json", description="Export format: 'json' or 'csv'"),
+    export_format: str = Query("json", description="Export format: 'json' or 'csv'"),
     rating_filter: int | None = Query(None, ge=-1, le=1, description="Filter by rating value"),
     with_comments_only: bool = Query(False, description="Only show ratings with comments"),
 ) -> Any:
     """Export all ratings as JSON or CSV (admin only).
 
-    Returns all matching ratings (not paginated) in the requested format.
+    Returns all matching ratings in the requested format. Uses chunked
+    fetching to avoid memory issues with large datasets.
     """
-    # Fetch all ratings without pagination
-    items, _ = await rating_service.list_ratings(
-        skip=0,
-        limit=10000,  # Large limit for export
+    chunks = rating_service.export_all_ratings(
         rating_filter=rating_filter,
         with_comments_only=with_comments_only,
     )
-
-    if format.lower() == "csv":
-        # Generate CSV
-        from io import StringIO
-
-        output = StringIO()
-        writer = csv.writer(output)
-        # Header row
-        writer.writerow([
-            "ID", "Message ID", "Conversation ID", "User ID",
-            "Rating", "Comment", "Message Content", "Message Role",
-            "User Email", "User Name", "Created At", "Updated At"
-        ])
-        # Data rows
-        for item in items:
-            writer.writerow([
-                str(item.id),
-                str(item.message_id),
-                str(item.conversation_id) if item.conversation_id else "",
-                str(item.user_id),
-                "Like" if item.rating == 1 else "Dislike",
-                item.comment or "",
-                item.message_content or "",
-                item.message_role or "",
-                item.user_email or "",
-                item.user_name or "",
-                item.created_at.isoformat() if item.created_at else "",
-                item.updated_at.isoformat() if item.updated_at else "",
-            ])
-
-        output.seek(0)
-        return StreamingResponse(
-            output,
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-            }
-        )
-    else:
-        # Return JSON
-        return JSONResponse(
-            content={
-                "ratings": [item.model_dump(mode="json") for item in items],
-                "total": len(items),
-                "exported_at": datetime.now().isoformat()
-            },
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"'
-            }
-        )
+    # Collect all chunks for the response
+    all_chunks: list[list[MessageRatingWithDetails]] = []
+    async for chunk in chunks:
+        all_chunks.append(chunk)
+    return _generate_export_response(all_chunks, export_format)
 
 
 {%- elif cookiecutter.use_sqlite %}
@@ -206,71 +236,20 @@ def get_rating_summary(
 def export_ratings(
     rating_service: MessageRatingSvc,
     admin_user: CurrentAdmin,
-    format: str = Query("json", description="Export format: 'json' or 'csv'"),
+    export_format: str = Query("json", description="Export format: 'json' or 'csv'"),
     rating_filter: int | None = Query(None, ge=-1, le=1, description="Filter by rating value"),
     with_comments_only: bool = Query(False, description="Only show ratings with comments"),
 ) -> Any:
     """Export all ratings as JSON or CSV (admin only).
 
-    Returns all matching ratings (not paginated) in the requested format.
+    Returns all matching ratings in the requested format. Uses chunked
+    fetching to avoid memory issues with large datasets.
     """
-    # Fetch all ratings without pagination
-    items, _ = rating_service.list_ratings(
-        skip=0,
-        limit=10000,  # Large limit for export
+    chunks = rating_service.export_all_ratings(
         rating_filter=rating_filter,
         with_comments_only=with_comments_only,
     )
-
-    if format.lower() == "csv":
-        # Generate CSV
-        from io import StringIO
-
-        output = StringIO()
-        writer = csv.writer(output)
-        # Header row
-        writer.writerow([
-            "ID", "Message ID", "Conversation ID", "User ID",
-            "Rating", "Comment", "Message Content", "Message Role",
-            "User Email", "User Name", "Created At", "Updated At"
-        ])
-        # Data rows
-        for item in items:
-            writer.writerow([
-                str(item.id),
-                str(item.message_id),
-                str(item.conversation_id) if item.conversation_id else "",
-                str(item.user_id),
-                "Like" if item.rating == 1 else "Dislike",
-                item.comment or "",
-                item.message_content or "",
-                item.message_role or "",
-                item.user_email or "",
-                item.user_name or "",
-                item.created_at.isoformat() if item.created_at else "",
-                item.updated_at.isoformat() if item.updated_at else "",
-            ])
-
-        output.seek(0)
-        return StreamingResponse(
-            output,
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-            }
-        )
-    else:
-        # Return JSON
-        return JSONResponse(
-            content={
-                "ratings": [item.model_dump(mode="json") for item in items],
-                "total": len(items),
-                "exported_at": datetime.now().isoformat()
-            },
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"'
-            }
-        )
+    return _generate_export_response(list(chunks), export_format)
 
 
 {%- elif cookiecutter.use_mongodb %}
@@ -326,75 +305,28 @@ async def get_rating_summary(
 async def export_ratings(
     rating_service: MessageRatingSvc,
     admin_user: CurrentAdmin,
-    format: str = Query("json", description="Export format: 'json' or 'csv'"),
+    export_format: str = Query("json", description="Export format: 'json' or 'csv'"),
     rating_filter: int | None = Query(None, ge=-1, le=1, description="Filter by rating value"),
     with_comments_only: bool = Query(False, description="Only show ratings with comments"),
 ) -> Any:
     """Export all ratings as JSON or CSV (admin only).
 
-    Returns all matching ratings (not paginated) in the requested format.
+    Returns all matching ratings in the requested format. Uses chunked
+    fetching to avoid memory issues with large datasets.
     """
-    # Fetch all ratings without pagination
-    items, _ = await rating_service.list_ratings(
-        skip=0,
-        limit=10000,  # Large limit for export
+    chunks = rating_service.export_all_ratings(
         rating_filter=rating_filter,
         with_comments_only=with_comments_only,
     )
-
-    if format.lower() == "csv":
-        # Generate CSV
-        from io import StringIO
-
-        output = StringIO()
-        writer = csv.writer(output)
-        # Header row
-        writer.writerow([
-            "ID", "Message ID", "Conversation ID", "User ID",
-            "Rating", "Comment", "Message Content", "Message Role",
-            "User Email", "User Name", "Created At", "Updated At"
-        ])
-        # Data rows
-        for item in items:
-            writer.writerow([
-                str(item.id),
-                str(item.message_id),
-                str(item.conversation_id) if item.conversation_id else "",
-                str(item.user_id),
-                "Like" if item.rating == 1 else "Dislike",
-                item.comment or "",
-                item.message_content or "",
-                item.message_role or "",
-                item.user_email or "",
-                item.user_name or "",
-                item.created_at.isoformat() if item.created_at else "",
-                item.updated_at.isoformat() if item.updated_at else "",
-            ])
-
-        output.seek(0)
-        return StreamingResponse(
-            output,
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-            }
-        )
-    else:
-        # Return JSON
-        return JSONResponse(
-            content={
-                "ratings": [item.model_dump(mode="json") for item in items],
-                "total": len(items),
-                "exported_at": datetime.now().isoformat()
-            },
-            headers={
-                "Content-Disposition": f'attachment; filename="ratings_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"'
-            }
-        )
+    # Collect all chunks for the response
+    all_chunks: list[list[MessageRatingWithDetails]] = []
+    async for chunk in chunks:
+        all_chunks.append(chunk)
+    return _generate_export_response(all_chunks, export_format)
 
 
 {%- endif %}
 {%- else %}
 # Admin ratings router - JWT not enabled
-router = None  # type: ignore
+router = APIRouter()  # type: ignore
 {%- endif %}

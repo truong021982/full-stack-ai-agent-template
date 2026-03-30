@@ -43,6 +43,9 @@ def _sanitize_comment(comment: str | None) -> str | None:
     # Remove null bytes and other control characters (except newlines/tabs)
     comment = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', comment)
 
+    # Unescape first to prevent double-escaping on re-rating
+    comment = html.unescape(comment)
+
     # HTML escape to prevent XSS
     comment = html.escape(comment)
 

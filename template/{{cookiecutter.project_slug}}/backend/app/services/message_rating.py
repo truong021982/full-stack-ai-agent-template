@@ -1,6 +1,7 @@
 """Message rating service - business logic for ratings."""
 
 {%- if cookiecutter.use_postgresql %}
+from collections.abc import AsyncGenerator
 from typing import Any
 
 from uuid import UUID
@@ -108,7 +109,6 @@ class MessageRatingService:
             rating = await rating_repo.create_rating(
                 self.db,
                 message_id=message_id,
-                conversation_id=conversation_id,
                 user_id=user_id,
                 rating=data.rating,
                 comment=data.comment,
@@ -216,6 +216,58 @@ class MessageRatingService:
 
         return result, total
 
+    EXPORT_CHUNK_SIZE = 5000
+
+    async def export_all_ratings(
+        self,
+        *,
+        rating_filter: int | None = None,
+        with_comments_only: bool = False,
+    ) -> AsyncGenerator[list[MessageRatingWithDetails], None]:
+        """Yield all ratings in chunks for memory-efficient export.
+
+        Fetches ratings in pages to avoid loading all ORM objects into
+        memory at once. Each yielded chunk is a list of lightweight
+        Pydantic schemas.
+        """
+        skip = 0
+        while True:
+            items, total = await rating_repo.list_ratings(
+                self.db,
+                skip=skip,
+                limit=self.EXPORT_CHUNK_SIZE,
+                rating_filter=rating_filter,
+                with_comments_only=with_comments_only,
+            )
+            if not items:
+                break
+            result = [
+                MessageRatingWithDetails(
+                    id=item.id,
+                    message_id=item.message_id,
+                    user_id=item.user_id,
+                    rating=RatingValue(item.rating),
+                    comment=item.comment,
+                    created_at=item.created_at,
+                    updated_at=item.updated_at,
+                    message_content=item.message.content[:200] if item.message else None,
+                    message_role=item.message.role if item.message else None,
+                    conversation_id=item.message.conversation_id if item.message else None,
+{%- if cookiecutter.use_jwt %}
+                    user_email=item.user.email if item.user else None,
+                    user_name=item.user.full_name if item.user else None,
+{%- else %}
+                    user_email=None,
+                    user_name=None,
+{%- endif %}
+                )
+                for item in items
+            ]
+            yield result
+            skip += self.EXPORT_CHUNK_SIZE
+            if skip >= total:
+                break
+
     async def get_summary(self, *, days: int = 30) -> RatingSummary:
         """Get aggregated rating statistics."""
         summary_data = await rating_repo.get_rating_summary(self.db, days=days)
@@ -225,6 +277,7 @@ class MessageRatingService:
 {%- elif cookiecutter.use_sqlite %}
 """Message rating service (SQLite sync)."""
 
+from collections.abc import Generator
 from typing import Any
 
 from sqlalchemy import select
@@ -330,7 +383,6 @@ class MessageRatingService:
             rating = rating_repo.create_rating(
                 self.db,
                 message_id=message_id,
-                conversation_id=conversation_id,
                 user_id=user_id,
                 rating=data.rating,
                 comment=data.comment,
@@ -438,6 +490,58 @@ class MessageRatingService:
 
         return result, total
 
+    EXPORT_CHUNK_SIZE = 5000
+
+    def export_all_ratings(
+        self,
+        *,
+        rating_filter: int | None = None,
+        with_comments_only: bool = False,
+    ) -> Generator[list[MessageRatingWithDetails], None, None]:
+        """Yield all ratings in chunks for memory-efficient export.
+
+        Fetches ratings in pages to avoid loading all ORM objects into
+        memory at once. Each yielded chunk is a list of lightweight
+        Pydantic schemas.
+        """
+        skip = 0
+        while True:
+            items, total = rating_repo.list_ratings(
+                self.db,
+                skip=skip,
+                limit=self.EXPORT_CHUNK_SIZE,
+                rating_filter=rating_filter,
+                with_comments_only=with_comments_only,
+            )
+            if not items:
+                break
+            result = [
+                MessageRatingWithDetails(
+                    id=item.id,
+                    message_id=item.message_id,
+                    user_id=item.user_id,
+                    rating=RatingValue(item.rating),
+                    comment=item.comment,
+                    created_at=item.created_at,
+                    updated_at=item.updated_at,
+                    message_content=item.message.content[:200] if item.message else None,
+                    message_role=item.message.role if item.message else None,
+                    conversation_id=item.message.conversation_id if item.message else None,
+{%- if cookiecutter.use_jwt %}
+                    user_email=item.user.email if item.user else None,
+                    user_name=item.user.full_name if item.user else None,
+{%- else %}
+                    user_email=None,
+                    user_name=None,
+{%- endif %}
+                )
+                for item in items
+            ]
+            yield result
+            skip += self.EXPORT_CHUNK_SIZE
+            if skip >= total:
+                break
+
     def get_summary(self, *, days: int = 30) -> RatingSummary:
         """Get aggregated rating statistics."""
         summary_data = rating_repo.get_rating_summary(self.db, days=days)
@@ -447,6 +551,7 @@ class MessageRatingService:
 {%- elif cookiecutter.use_mongodb %}
 """Message rating service (MongoDB async)."""
 
+from collections.abc import AsyncGenerator
 from typing import Any
 
 from app.core.exceptions import NotFoundError, ValidationError
@@ -654,6 +759,76 @@ class MessageRatingService:
             )
 
         return result, total
+
+    EXPORT_CHUNK_SIZE = 5000
+
+    async def export_all_ratings(
+        self,
+        *,
+        rating_filter: int | None = None,
+        with_comments_only: bool = False,
+    ) -> AsyncGenerator[list[MessageRatingWithDetails], None]:
+        """Yield all ratings in chunks for memory-efficient export.
+
+        Fetches ratings in pages to avoid loading all ORM objects into
+        memory at once. Each yielded chunk is a list of lightweight
+        Pydantic schemas.
+        """
+        skip = 0
+        while True:
+            items, total = await rating_repo.list_ratings(
+                skip=skip,
+                limit=self.EXPORT_CHUNK_SIZE,
+                rating_filter=rating_filter,
+                with_comments_only=with_comments_only,
+            )
+            if not items:
+                break
+
+            # Batch fetch related messages and users
+{%- if cookiecutter.use_jwt %}
+            from app.db.models.user import User
+
+            message_ids = [item.message_id for item in items]
+            user_ids = [item.user_id for item in items if item.user_id]
+            messages = {msg.id: msg for msg in await Message.find({"_id": {"$in": message_ids}}).to_list()}
+            users = {user.id: user for user in await User.find({"_id": {"$in": user_ids}}).to_list()} if user_ids else {}
+{%- else %}
+            message_ids = [item.message_id for item in items]
+            messages = {msg.id: msg for msg in await Message.find({"_id": {"$in": message_ids}}).to_list()}
+{%- endif %}
+
+            result = []
+            for item in items:
+                message = messages.get(item.message_id)
+{%- if cookiecutter.use_jwt %}
+                user = users.get(item.user_id) if item.user_id else None
+{%- endif %}
+                result.append(
+                    MessageRatingWithDetails(
+                        id=item.id,
+                        message_id=item.message_id,
+                        user_id=item.user_id,
+                        rating=RatingValue(item.rating),
+                        comment=item.comment,
+                        created_at=item.created_at,
+                        updated_at=item.updated_at,
+                        message_content=message.content[:200] if message else None,
+                        message_role=message.role if message else None,
+                        conversation_id=message.conversation_id if message else None,
+{%- if cookiecutter.use_jwt %}
+                        user_email=user.email if user else None,
+                        user_name=user.full_name if user else None,
+{%- else %}
+                        user_email=None,
+                        user_name=None,
+{%- endif %}
+                    )
+                )
+            yield result
+            skip += self.EXPORT_CHUNK_SIZE
+            if skip >= total:
+                break
 
     async def get_summary(self, *, days: int = 30) -> RatingSummary:
         """Get aggregated rating statistics."""

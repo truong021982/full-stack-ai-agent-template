@@ -4,7 +4,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -31,6 +31,7 @@ class MessageRating(TimestampMixin, SQLModel, table=True):
     __tablename__ = "message_ratings"
     __table_args__ = (
         UniqueConstraint("message_id", "user_id", name="uq_message_user_rating"),
+        CheckConstraint("rating IN (1, -1)", name="ck_rating_value"),
     )
 
     id: uuid.UUID = Field(
@@ -87,7 +88,7 @@ class MessageRating(TimestampMixin, SQLModel, table=True):
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -106,6 +107,7 @@ class MessageRating(Base, TimestampMixin):
     # Unique constraint: one rating per user per message
     __table_args__ = (
         UniqueConstraint("message_id", "user_id", name="uq_message_user_rating"),
+        CheckConstraint("rating IN (1, -1)", name="ck_rating_value"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -154,7 +156,7 @@ class MessageRating(Base, TimestampMixin):
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.db.base import TimestampMixin
@@ -182,6 +184,7 @@ class MessageRating(TimestampMixin, SQLModel, table=True):
     __tablename__ = "message_ratings"
     __table_args__ = (
         UniqueConstraint("message_id", "user_id", name="uq_message_user_rating"),
+        CheckConstraint("rating IN (1, -1)", name="ck_rating_value"),
     )
 
     id: str = Field(
@@ -238,7 +241,7 @@ class MessageRating(TimestampMixin, SQLModel, table=True):
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -258,6 +261,7 @@ class MessageRating(Base, TimestampMixin):
     # Unique constraint: one rating per user per message
     __table_args__ = (
         UniqueConstraint("message_id", "user_id", name="uq_message_user_rating"),
+        CheckConstraint("rating IN (1, -1)", name="ck_rating_value"),
     )
 
     id: Mapped[str] = mapped_column(
@@ -304,11 +308,13 @@ class MessageRating(Base, TimestampMixin):
 
 {%- elif cookiecutter.use_mongodb %}
 from datetime import UTC, datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from beanie import Document, Link
 from pydantic import Field
 from pymongo import ASCENDING, DESCENDING, IndexModel
+
+from app.schemas.message_rating import RatingValue
 
 
 class MessageRating(Document):
@@ -331,7 +337,7 @@ class MessageRating(Document):
 {%- else %}
     user_id: str
 {%- endif %}
-    rating: Literal[1, -1]
+    rating: RatingValue
     comment: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: Optional[datetime] = None

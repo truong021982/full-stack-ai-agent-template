@@ -11,11 +11,11 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const format = searchParams.get("format") || "json";
+    const export_format = searchParams.get("export_format") || "json";
     const ratingFilter = searchParams.get("rating_filter");
     const withCommentsOnly = searchParams.get("with_comments_only") === "true";
 
-    let url = `/api/v1/admin/ratings/export?format=${format}`;
+    let url = `/api/v1/admin/ratings/export?export_format=${export_format}`;
     if (ratingFilter) url += `&rating_filter=${ratingFilter}`;
     if (withCommentsOnly) url += `&with_comments_only=true`;
 
@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const filename = `ratings_export_${new Date().toISOString().slice(0, 10)}.${format}`;
+    const filename = `ratings_export_${new Date().toISOString().slice(0, 10)}.${export_format}`;
 
-    if (format === "csv") {
+    if (export_format === "csv") {
       return new NextResponse(data as string, {
         headers: {
           "Content-Type": "text/csv",
