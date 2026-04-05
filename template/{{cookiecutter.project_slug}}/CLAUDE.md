@@ -29,7 +29,7 @@ uv run uvicorn app.main:app --reload --port {{ cookiecutter.backend_port }}
 uv run pytest
 uv run pytest tests/test_file.py::test_name -v
 uv run ruff check . --fix && uv run ruff format .
-uv run mypy app
+uv run ty check
 {%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
 
 # Database migrations

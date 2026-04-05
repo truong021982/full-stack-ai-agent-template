@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`.claude/` directory in generated projects** — Full Claude Code project structure so generated projects work as AI-native codebases out of the box
-  - **`settings.json`** — Auto-allow permissions for safe operations (Read, Glob, Grep, git, pytest, ruff, mypy, alembic)
+  - **`settings.json`** — Auto-allow permissions for safe operations (Read, Glob, Grep, git, pytest, ruff, ty, alembic)
   - **`rules/architecture.md`** — Layered architecture patterns (Routes → Services → Repositories), DI with `Annotated` aliases, `db.flush()` convention, domain exceptions
   - **`rules/code-style.md`** — Type hints (`str | None`), naming conventions table, import ordering (stdlib → third-party → local), ruff config
   - **`rules/schemas-models.md`** — Pydantic v2 `*Create/*Update/*Read/*List` pattern, `BaseSchema` with `ConfigDict`, SQLAlchemy `Mapped[]` columns, `TimestampMixin`
@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`commands/add-endpoint.md`** — `/project:add-endpoint` slash command: scaffolds full CRUD (schema → model → repo → service → deps → route → migration → test)
   - **`commands/fix-issue.md`** — `/project:fix-issue` slash command: traces through layers, fixes, tests, lints
 - **Enhanced `CLAUDE.md`** — Rewritten with precise patterns from the actual codebase: architecture layers, DI pattern, schema conventions, exception table, response format examples, key conventions
+
+### Changed
+
+- **Replaced mypy with [ty](https://github.com/astral-sh/ty)** — Astral's Rust-based type checker (from the makers of ruff/uv). Updated across: `pyproject.toml`, Makefile, CI (GitHub Actions + GitLab CI), pre-commit config, `.gitignore`
+- **Dependency version bumps** — All generated project dependencies updated to latest stable versions:
+  - **Core:** FastAPI 0.135.3, uvicorn 0.43.0, Pydantic 2.12.0, pydantic-settings 2.13.0
+  - **Database:** SQLAlchemy 2.0.40, asyncpg 0.31.0, alembic 1.18.0, sqlmodel 0.0.38, motor 3.7.0, beanie 1.29.0
+  - **AI Frameworks:** pydantic-ai 1.77.0, langchain 1.2.0, langchain-openai 1.1.0, langgraph 0.4.0, langgraph-checkpoint 4.0.0, crewai 1.13.0
+  - **Vector Stores:** pymilvus 2.6.0, qdrant-client 1.14.0, chromadb 1.5.0
+  - **Infra:** redis 7.3.0, celery 5.6.0, sentry-sdk 2.53.0, logfire 4.30.0, sqladmin 0.24.0, boto3 1.42.0
+  - **Dev:** pytest 9.0.0, ruff 0.15.0, ty 0.0.29
 
 ## [0.2.2] - 2026-03-20
 

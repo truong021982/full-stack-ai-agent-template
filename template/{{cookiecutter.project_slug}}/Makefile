@@ -64,7 +64,7 @@ format:
 lint:
 	uv run --directory backend ruff check app tests cli
 	uv run --directory backend ruff format app tests cli --check
-	uv run --directory backend mypy app
+	uv run --directory backend ty check
 
 # === Testing ===
 test:
@@ -287,7 +287,7 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .ty_cache -exec rm -rf {} + 2>/dev/null || true
 	rm -rf htmlcov/ .coverage coverage.xml
 
 # === Help ===

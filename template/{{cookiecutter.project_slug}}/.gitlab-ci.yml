@@ -54,11 +54,11 @@ ruff-format:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-mypy:
+ty:
   stage: lint
   extends: .python_base
   script:
-    - uv run mypy app
+    - uv run ty check
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

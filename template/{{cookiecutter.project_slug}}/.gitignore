@@ -70,10 +70,8 @@ venv.bak/
 *.swo
 *~
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# ty
+.ty_cache/
 
 # ruff
 .ruff_cache/

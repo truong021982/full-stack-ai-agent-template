@@ -58,7 +58,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.8.0",
-    "mypy>=1.13.0",
+    "ty>=0.0.29",
     "pre-commit>=3.0.0",
 ]
 docs = [
@@ -134,24 +134,12 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
-[tool.mypy]
-python_version = "3.11"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-ignore_missing_imports = true
+[tool.ty]
+python-version = "3.11"
 # Exclude Jinja2 template files
 exclude = [
     "template/",
 ]
-
-[[tool.mypy.overrides]]
-module = "fastapi_gen.config"
-# Pydantic's @computed_field on top of @property is valid but mypy doesn't like it
-disable_error_code = ["prop-decorator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -177,6 +165,6 @@ exclude_lines = [
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
+    "ty>=0.0.29",
     "pytest-cov>=7.0.0",
 ]

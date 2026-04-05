@@ -26,7 +26,7 @@ Run these from the project root directory.
 | `make test` | Run tests with verbose output |
 | `make test-cov` | Run tests with coverage report (HTML + terminal) |
 | `make format` | Auto-format code with ruff |
-| `make lint` | Lint and type-check code (ruff + mypy) |
+| `make lint` | Lint and type-check code (ruff + ty) |
 | `make clean` | Remove cache files (__pycache__, .pytest_cache, etc.) |
 
 {%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}

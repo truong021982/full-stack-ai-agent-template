@@ -10,7 +10,7 @@
       "Bash(git branch*)",
       "Bash(cd backend && uv run pytest*)",
       "Bash(cd backend && uv run ruff*)",
-      "Bash(cd backend && uv run mypy*)",
+      "Bash(cd backend && uv run ty*)",
       "Bash(cd backend && uv run alembic*)"
     ]
   }

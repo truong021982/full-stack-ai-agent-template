@@ -23,7 +23,7 @@ uv run ruff check . --fix
 uv run ruff format .
 
 # Type checking
-uv run mypy fastapi_gen
+uv run ty check
 ```
 
 ## CLI Usage
