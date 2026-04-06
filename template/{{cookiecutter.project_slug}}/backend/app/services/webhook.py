@@ -13,13 +13,21 @@ from uuid import UUID
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
-from app.core.sanitize import validate_webhook_url
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.sanitize import SSRFBlockedError, validate_webhook_url
 from app.db.models.webhook import Webhook, WebhookDelivery
 from app.repositories import webhook_repo
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_url_or_raise_422(url: str) -> str:
+    """Validate a webhook URL; convert SSRF/ValueError into ValidationError (422)."""
+    try:
+        return validate_webhook_url(url)
+    except (SSRFBlockedError, ValueError) as exc:
+        raise ValidationError(message=str(exc)) from exc
 
 
 class WebhookService:
@@ -35,7 +43,7 @@ class WebhookService:
     ) -> Webhook:
         """Create a new webhook subscription."""
         # Validate URL against SSRF before storing
-        validate_webhook_url(str(data.url))
+        _validate_url_or_raise_422(str(data.url))
 
         # Generate a secure secret for HMAC signing
         secret = secrets.token_urlsafe(32)
@@ -76,7 +84,7 @@ class WebhookService:
         """Update a webhook."""
         # Validate new URL against SSRF if provided
         if data.url is not None:
-            validate_webhook_url(str(data.url))
+            _validate_url_or_raise_422(str(data.url))
 
         webhook = await self.get_webhook(webhook_id)
         return await webhook_repo.update(self.db, webhook, data)
@@ -138,7 +146,7 @@ class WebhookService:
     ) -> dict:
         """Deliver a payload to a webhook with HMAC signature."""
         # Re-validate URL at delivery time to prevent DNS rebinding attacks
-        validate_webhook_url(webhook.url)
+        _validate_url_or_raise_422(webhook.url)
 
         payload_json = json.dumps(payload, default=str)
 
@@ -160,6 +168,9 @@ class WebhookService:
         await self.db.flush()
 
         try:
+            # SECURITY: follow_redirects defaults to False in httpx.
+            # Do NOT enable it — redirects could bypass SSRF validation
+            # by redirecting to an internal IP after the URL check passes.
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     webhook.url,
@@ -240,13 +251,21 @@ from datetime import UTC, datetime
 import httpx
 from sqlalchemy.orm import Session as DBSession
 
-from app.core.exceptions import NotFoundError
-from app.core.sanitize import validate_webhook_url
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.sanitize import SSRFBlockedError, validate_webhook_url
 from app.db.models.webhook import Webhook, WebhookDelivery
 from app.repositories import webhook_repo
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_url_or_raise_422(url: str) -> str:
+    """Validate a webhook URL; convert SSRF/ValueError into ValidationError (422)."""
+    try:
+        return validate_webhook_url(url)
+    except (SSRFBlockedError, ValueError) as exc:
+        raise ValidationError(message=str(exc)) from exc
 
 
 class WebhookService:
@@ -262,7 +281,7 @@ class WebhookService:
     ) -> Webhook:
         """Create a new webhook subscription."""
         # Validate URL against SSRF before storing
-        validate_webhook_url(str(data.url))
+        _validate_url_or_raise_422(str(data.url))
 
         secret = secrets.token_urlsafe(32)
 
@@ -302,7 +321,7 @@ class WebhookService:
         """Update a webhook."""
         # Validate new URL against SSRF if provided
         if data.url is not None:
-            validate_webhook_url(str(data.url))
+            _validate_url_or_raise_422(str(data.url))
 
         webhook = self.get_webhook(webhook_id)
         return webhook_repo.update(self.db, webhook, data)
@@ -343,7 +362,7 @@ class WebhookService:
     ) -> dict:
         """Deliver a payload to a webhook with HMAC signature."""
         # Re-validate URL at delivery time to prevent DNS rebinding attacks
-        validate_webhook_url(webhook.url)
+        _validate_url_or_raise_422(webhook.url)
 
         payload_json = json.dumps(payload, default=str)
         signature = self._create_signature(webhook.secret, payload_json)
@@ -363,6 +382,9 @@ class WebhookService:
         self.db.flush()
 
         try:
+            # SECURITY: follow_redirects defaults to False in httpx.
+            # Do NOT enable it — redirects could bypass SSRF validation
+            # by redirecting to an internal IP after the URL check passes.
             with httpx.Client(timeout=30.0) as client:
                 response = client.post(
                     webhook.url,
@@ -421,13 +443,21 @@ from datetime import UTC, datetime
 
 import httpx
 
-from app.core.exceptions import NotFoundError
-from app.core.sanitize import validate_webhook_url
+from app.core.exceptions import NotFoundError, ValidationError
+from app.core.sanitize import SSRFBlockedError, validate_webhook_url
 from app.db.models.webhook import Webhook, WebhookDelivery
 from app.repositories import webhook_repo
 from app.schemas.webhook import WebhookCreate, WebhookUpdate
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_url_or_raise_422(url: str) -> str:
+    """Validate a webhook URL; convert SSRF/ValueError into ValidationError (422)."""
+    try:
+        return validate_webhook_url(url)
+    except (SSRFBlockedError, ValueError) as exc:
+        raise ValidationError(message=str(exc)) from exc
 
 
 class WebhookService:
@@ -440,7 +470,7 @@ class WebhookService:
     ) -> Webhook:
         """Create a new webhook subscription."""
         # Validate URL against SSRF before storing
-        validate_webhook_url(str(data.url))
+        _validate_url_or_raise_422(str(data.url))
 
         secret = secrets.token_urlsafe(32)
 
@@ -477,7 +507,7 @@ class WebhookService:
         """Update a webhook."""
         # Validate new URL against SSRF if provided
         if data.url is not None:
-            validate_webhook_url(str(data.url))
+            _validate_url_or_raise_422(str(data.url))
 
         webhook = await self.get_webhook(webhook_id)
         return await webhook_repo.update(webhook, data)
@@ -518,7 +548,7 @@ class WebhookService:
     ) -> dict:
         """Deliver a payload to a webhook with HMAC signature."""
         # Re-validate URL at delivery time to prevent DNS rebinding attacks
-        validate_webhook_url(webhook.url)
+        _validate_url_or_raise_422(webhook.url)
 
         payload_json = json.dumps(payload, default=str)
         signature = self._create_signature(webhook.secret, payload_json)
@@ -537,6 +567,9 @@ class WebhookService:
         await delivery.insert()
 
         try:
+            # SECURITY: follow_redirects defaults to False in httpx.
+            # Do NOT enable it — redirects could bypass SSRF validation
+            # by redirecting to an internal IP after the URL check passes.
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     webhook.url,
