@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Message rating feature** — Users can rate AI assistant messages with thumbs up/down and optional feedback comments. Toggle behavior: clicking same button removes rating, clicking opposite button changes it. Only assistant messages are rateable
+  - **Backend:** `MessageRating` model (PostgreSQL/SQLite/MongoDB, SQLAlchemy/SQLModel), repository + service + schema layers, `POST /conversations/{id}/messages/{messageId}/rate` endpoint. Ratings persisted to `message_ratings` table with unique constraint per user/message and `CHECK` constraint on rating values (1/-1). Optional comment field (up to 2000 chars). Supports all 3 database variants
+  - **Admin API:** `GET /admin/ratings` (paginated list with filters), `GET /admin/ratings/summary` (aggregate stats), `DELETE /admin/ratings/{id}`, `GET /admin/ratings/export` (CSV download). `GET /admin/conversations` (paginated listing). All admin routes require admin role
+  - **WebSocket integration:** Ratings data (user's rating, like/dislike counts) included in streaming message events and conversation history loading
+  - **Frontend:** `RatingButtons` component with like/dislike icons, comment dialog on dislike, optimistic count updates. Integrated into `message-item.tsx` for assistant messages. Admin pages for ratings management and conversations listing
+  - **Frontend proxy routes:** `POST /api/conversations/{id}/messages/{messageId}/rate` proxy, `GET/DELETE /api/v1/admin/ratings` routes, `lib/admin-auth.ts` utility for admin API calls with token refresh
+  - **Documentation:** `docs/howto/use-ratings.md` user guide, updated `docs/architecture.md` and `docs/permissions.md`
+  - **Tests:** 660+ lines of tests covering config validation, model generation, repository/service/route layers, all database variants
+
 ## [0.2.4] - 2026-04-09
 
 ### Security
