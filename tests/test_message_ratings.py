@@ -385,25 +385,25 @@ class TestRatingFeatureCodeQuality:
         assert result.returncode == 0, f"Ruff failed for admin_ratings route:\n{result.stdout}"
 
     @pytest.mark.slow
-    def test_rating_files_pass_mypy(self, project_with_ratings: Path) -> None:
-        """Test that rating files pass mypy type checking."""
+    def test_rating_files_pass_ty(self, project_with_ratings: Path) -> None:
+        """Test that rating files pass ty type checking."""
         backend_path = project_with_ratings / "backend" / "app"
         result = subprocess.run(
             [
                 "uv",
                 "run",
-                "mypy",
+                "ty",
+                "check",
                 str(backend_path / "db" / "models" / "message_rating.py"),
                 str(backend_path / "repositories" / "message_rating.py"),
                 str(backend_path / "services" / "message_rating.py"),
                 str(backend_path / "schemas" / "message_rating.py"),
-                "--ignore-missing-imports",
             ],
             capture_output=True,
             text=True,
             cwd=project_with_ratings,
         )
-        assert result.returncode == 0, f"Mypy failed for rating files:\n{result.stdout}"
+        assert result.returncode == 0, f"Ty failed for rating files:\n{result.stdout}"
 
 
 class TestRatingFeatureAllDatabases:

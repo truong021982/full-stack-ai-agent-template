@@ -170,4 +170,5 @@ exclude_lines = [
 dev = [
     "ty>=0.0.29",
     "pytest-cov>=7.0.0",
+    "sqlalchemy>=2.0.40",
 ]

@@ -843,10 +843,10 @@ class TestConversationServiceExportAll:
             mock_repo.get_conversations_by_user = AsyncMock(return_value=[])
             mock_repo.count_conversations = AsyncMock(return_value=0)
 
-            # Mock db.execute for ratings query - returns empty result
-            mock_result = MagicMock()
-            mock_result.all.return_value = []
-            service.db.execute = AsyncMock(return_value=mock_result)
+            # Mock db.execute: returns empty conversations result
+            conv_result = MagicMock()
+            conv_result.scalars.return_value.all.return_value = []
+            service.db.execute = AsyncMock(return_value=conv_result)
 
             result = await service.export_all()
 
@@ -879,10 +879,12 @@ class TestConversationServiceExportAll:
             mock_repo.get_messages_by_conversation = AsyncMock(return_value=[mock_msg])
             mock_repo.count_messages = AsyncMock(return_value=1)
 
-            # Mock db.execute for ratings query - returns empty result
-            mock_result = MagicMock()
-            mock_result.all.return_value = []
-            service.db.execute = AsyncMock(return_value=mock_result)
+            # Mock db.execute: first call returns conversations, second returns ratings
+            conv_result = MagicMock()
+            conv_result.scalars.return_value.all.return_value = [mock_conv]
+            ratings_result = MagicMock()
+            ratings_result.all.return_value = []
+            service.db.execute = AsyncMock(side_effect=[conv_result, ratings_result])
 
             result = await service.export_all()
 

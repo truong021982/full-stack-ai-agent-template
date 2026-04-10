@@ -56,7 +56,7 @@ export function useChat() {
         const newMsgId = nanoid();
 {%- if cookiecutter.use_database %}
         // Use current conversationId from store to avoid closure issues
-        const effectiveConversationId = currentConversationIdFromStore || conversationId;
+        const effectiveConversationId = currentConversationIdFromStore || conversationId || undefined;
 {%- endif %}
         addMessage({
           id: newMsgId,

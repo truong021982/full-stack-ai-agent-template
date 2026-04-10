@@ -153,7 +153,7 @@ export function MessageItem({ message, groupPosition }: MessageItemProps) {
             {!isUser && (
               <RatingButtons
                 messageId={message.id}
-                conversationId={message.conversationId}
+                conversationId={message.conversationId ?? ""}
                 currentRating={message.user_rating ?? null}
                 ratingCount={message.rating_count ?? undefined}
                 isAssistant={!isUser}
