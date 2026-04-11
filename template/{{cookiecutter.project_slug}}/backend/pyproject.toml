@@ -106,16 +106,16 @@ dependencies = [
 {%- endif %}
 {%- if cookiecutter.use_pydantic_ai %}
 {%- if cookiecutter.use_openai %}
-    "pydantic-ai>=1.77.0",
+    "pydantic-ai[duckduckgo,web-fetch]>=1.80.0",
 {%- endif %}
 {%- if cookiecutter.use_anthropic %}
-    "pydantic-ai-slim[anthropic]>=1.77.0",
+    "pydantic-ai-slim[anthropic,duckduckgo,web-fetch]>=1.80.0",
 {%- endif %}
 {%- if cookiecutter.use_google %}
-    "pydantic-ai-slim[google]>=1.77.0",
+    "pydantic-ai-slim[google,duckduckgo,web-fetch]>=1.80.0",
 {%- endif %}
 {%- if cookiecutter.use_openrouter %}
-    "pydantic-ai-slim[openrouter]>=1.77.0",
+    "pydantic-ai-slim[openrouter,duckduckgo,web-fetch]>=1.80.0",
 {%- endif %}
 {%- endif %}
 {%- if cookiecutter.use_langchain %}
@@ -168,6 +168,15 @@ dependencies = [
 {%- if cookiecutter.use_google %}
     "langchain-google-genai>=2.1.0",
 {%- endif %}
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep %}
+    # pydantic-deep: deep agentic coding assistant built on pydantic-ai
+    "pydantic-deep>=0.1.0",
+    # pydantic-ai backend with console toolset (StateBackend, LocalBackend)
+    "pydantic-ai-backend[console]>=0.2.4",
+    # pydantic-ai with web search and fetch support (WebSearch, WebFetch capabilities)
+    "pydantic-ai-slim[duckduckgo,web-fetch]>=1.80.0",
+    # Optional: install pydantic-ai-backend[docker] for DockerSandbox support
 {%- endif %}
 {%- if cookiecutter.enable_rag %}
     # Vector store
@@ -240,6 +249,15 @@ dependencies = [
     "tqdm>=4.66.0",
 {%- if cookiecutter.enable_web_search %}
     "tavily-py>=0.5.0",
+{%- endif %}
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+    "cryptography>=44.0.0",
+{%- endif %}
+{%- if cookiecutter.use_telegram %}
+    "aiogram>=3.17,<4.0",
+{%- endif %}
+{%- if cookiecutter.use_slack %}
+    "slack-sdk>=3.35.0",
 {%- endif %}
 ]
 

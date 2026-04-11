@@ -134,6 +134,9 @@ class ConversationService:
 {%- if cookiecutter.use_jwt %}
             user_id=data.user_id,
 {%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+            project_id=data.project_id,
+{%- endif %}
             title=data.title,
         )
 

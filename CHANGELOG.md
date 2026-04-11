@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-04-12
+
+### Added
+
+#### Conversation Sharing + Admin Conversation Browser
+
+- **Conversation sharing** — Share conversations with other users (direct share by user ID) or generate public share links (UUID4 token). Permission levels: `view` (read-only) and `edit` (can add messages). Owner can share, list shares, and revoke access. Recipients can also leave shared conversations
+- **`ConversationShare` model** — New DB model across all 5 variants (PG+SQLModel, PG+SQLAlchemy, SQLite+SQLModel, SQLite+SQLAlchemy, MongoDB). Fields: conversation_id, shared_by, shared_with, share_token, permission. Unique constraint on (conversation_id, shared_with)
+- **Share endpoints** — `POST /conversations/{id}/shares` (share or generate link), `GET /conversations/{id}/shares` (list shares, owner only), `DELETE /conversations/{id}/shares/{share_id}` (revoke), `GET /conversations/shared-with-me` (list shared with current user), `GET /conversations/shared/{token}` (public access, no auth)
+- **Admin conversation browser** — Admin-only endpoints: `GET /admin/conversations` (paginated, searchable by title, filterable by user_id, includes message_count and user_email), `GET /admin/conversations/{id}` (full conversation with messages), `GET /admin/conversations/users` (user list with conversation counts, searchable)
+- **Share dialog component** — Frontend dialog to share conversations: user search input, permission dropdown (view/edit), generate share link with copy button, list current shares with revoke
+- **Admin conversations page** — `/admin/conversations` page with tabs (Conversations/Users), table views, search, click-to-preview (read-only), user → conversations drill-down
+- **Public shared page** — `/shared/[token]` SSR page renders conversation transcript without sidebar or input. Clean read-only view using server-side fetch
+- **Frontend hooks** — `useConversationShares` (share, fetch, revoke, shared-with-me) and `useAdminConversations` (admin list, users, detail preview)
+
+#### Slack Multi-Bot Channel Integration
+
+- **Slack adapter** — `SlackAdapter(ChannelAdapter)` supporting both Events API (production webhook) and Socket Mode (development polling). Thread-aware: Slack thread replies fold `thread_ts` into `platform_chat_id` (`{channel}:{thread_ts}`) so each thread gets its own `ChannelSession` and `Conversation`
+- **Events API webhook** — `POST /slack/{bot_id}/events` endpoint handles Slack URL verification challenge and event dispatch. Signature verified via HMAC-SHA256 (`v0={timestamp}:{body}`) with 5-minute replay-protection window. Fire-and-forget background dispatch meets Slack's 3s response requirement
+- **Socket Mode (dev)** — Supervised polling loop with `slack-sdk`'s `SocketModeClient`. Bot-scoped tasks with 5s back-off restart on crash. Lifecycle managed in app lifespan alongside Telegram polling
+- **`use_slack` cookiecutter variable** — Gates all Slack infrastructure. CLI interactive prompt for "Enable Slack integration" added alongside Telegram. Enables: `slack-sdk>=3.35.0`, Slack-specific config vars (`SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`), `POST /slack/{bot_id}/events` route
+- **Shared channel infrastructure expanded** — All 14 shared files (`ChannelAdapter` base, models, repos, services, router, commands) gated from `use_telegram` → `use_telegram or use_slack` so both platforms share the same session/identity/bot management layer
+- **Group chat concurrency control** — Per-chat `asyncio.Lock` (keyed on `{bot_id}:{platform_chat_id}`) in `ChannelMessageRouter.route()`. Serializes concurrent messages from the same group/channel to prevent: duplicate `ChannelSession` creation (DB constraint violation), interleaved agent invocations on the same `Conversation`, and rate-limit counter races. Affects both Telegram groups and Slack channels
+
+#### Telegram Multi-Bot Channel Integration
+
+- **Full Telegram bot integration** — Multi-bot support with polling and webhook delivery modes, encrypted token storage (Fernet), in-memory rate limiting (token-bucket per user per bot), and role-based access policies (open, whitelist, jwt_linked, group_only)
+- **Channel adapter architecture** — Abstract `ChannelAdapter` base class with concrete `TelegramAdapter` (aiogram v3). Adapter registry pattern for future platform extensions (Discord, Slack, etc.)
+- **Channel message router** — 8-step processing pipeline: load bot, check access, handle commands (/start, /new, /help, /link, /unlink, /project), resolve identity, resolve session, rate-limit, invoke agent, send reply
+- **3 new DB models** — `ChannelBot` (encrypted token, access policy, webhook config), `ChannelIdentity` (platform user ↔ app user linking with link codes), `ChannelSession` (bot+chat → conversation mapping)
+- **Admin API routes** — Full CRUD for bot management (`/channels/bots`), activate/deactivate, webhook register/delete, session listing. All endpoints require admin role with proper `ChannelBotCreate`/`ChannelBotUpdate`/`ChannelBotRead` schemas
+- **Webhook endpoint** — `POST /telegram/{bot_id}/webhook` with signature verification, fire-and-forget async processing to stay within Telegram's 5s timeout
+- **Supervised polling** — Per-bot polling loop with 5s back-off restart on crash, managed via lifespan startup/shutdown
+- **CLI commands** — `channel-list-bots`, `channel-add-bot`, `channel-webhook-register`, `channel-webhook-delete`, `channel-test-message`
+- **`AgentInvocationService`** — Framework-agnostic non-streaming agent invocation for all 6 AI frameworks, used by Telegram channel router
+- **`use_telegram` cookiecutter variable** — Gates all Telegram code via Jinja2 conditionals. CLI interactive prompt added
+
+#### PydanticDeep Framework (6th AI Framework)
+
+- **PydanticDeep integration** — Deep agentic coding assistant built on pydantic-ai with filesystem tools (ls, read_file, write_file, edit_file, glob, grep), task management, subagent delegation, skills system, memory persistence, and context discovery
+- **Sandbox environment selection in CLI** — New interactive prompt when selecting DeepAgents or PydanticDeep:
+  - **PydanticDeep:** Docker sandbox (default), Daytona workspace, State (in-memory)
+  - **DeepAgents:** Docker sandbox (default), State (in-memory)
+- **`sandbox_backend` cookiecutter variable** — Configures `PYDANTIC_DEEP_BACKEND_TYPE` / `DEEPAGENTS_BACKEND_TYPE` in generated Settings
+- **File upload to sandbox workspace** — When users attach files in chat, files are written to the Docker/Daytona sandbox via `docker cp` (or backend API) so the agent can access them with `read_file`. File paths are automatically included in the user message. Falls back to inline content for StateBackend
+- **Project-scoped WebSocket endpoint** — `ws/projects/{project_id}/chats/{conversation_id}` for shared Docker containers per project
+
+#### PydanticAI Capabilities
+
+- **WebSearch and WebFetch as default capabilities** — All PydanticAI agents now include `WebSearch()` and `WebFetch()` capabilities. Provider-adaptive: uses builtin when the model supports it natively, falls back to DuckDuckGo (search) and markdownify (fetch)
+- **pydantic-ai bumped to >=1.80.0** with `duckduckgo` and `web-fetch` extras for local fallback support
+
+### Changed
+
+- **Removed LocalBackend from PydanticDeep** — Server-side filesystem backends are not appropriate for web apps. Only Docker/Daytona sandbox and StateBackend are supported
+- **Removed `PYDANTIC_DEEP_WORKSPACE_DIR` setting** — No longer needed without LocalBackend
+
+### Fixed
+
+#### Telegram Channel Code Review Fixes
+
+- **`channels/router.py`** — Made `route()` always `async def` (was sync for SQLite, causing `asyncio.get_event_loop().run_until_complete()` crash). Removed broken `_handle_command_sync`, `_resolve_identity_sync`, `_resolve_session_sync` methods. Added SQLite branches to all async methods
+- **`channels/router.py`** — Fixed `/link` command: replaced non-existent `channel_link_repo.redeem_code()` with `channel_identity_repo.get_by_link_code()`. Code is invalidated after use
+- **`channels/router.py`** — Fixed `bot.encrypted_token` → `bot.token_encrypted` in `_send_reply()`. Fixed `bot.system_prompt` → `bot.system_prompt_override` and `bot.model_override` → `bot.ai_model_override`
+- **`channels/router.py`** — Fixed MongoDB import paths: `from app.db.models.channel import` → `from app.db.models.channel_identity import` / `from app.db.models.channel_session import`
+- **`channels/router.py`** — Added `_parse_policy()` helper to normalize `access_policy` from JSON string (SQLite) or dict (PostgreSQL/MongoDB)
+- **`channels/telegram.py`** — Removed module-level singleton that conflicted with lifespan-managed adapter in `main.py`. Fixed SQLite `_handle_update` to `await router.route()`
+- **`api/routes/v1/channels.py`** — Fixed all service method names (`service.list_bots()` → `service.list()`, etc.). Replaced `data: Any` with proper `ChannelBotCreate`/`ChannelBotUpdate` schemas. Added `response_model` to all endpoints. Made SQLite webhook routes `async` (was using `asyncio.run()` inside running loop)
+- **`api/routes/v1/telegram_webhook.py`** — Fixed SQLite branch to `await router.route()` (route is now always async)
+- **`services/channel_bot.py`** — Generate `webhook_secret` via `secrets.token_urlsafe(32)` when `webhook_mode=True` (was always `None`). Added `list_sessions()` method to all 3 backends
+- **`repositories/channel_session.py`** — Added `list_by_bot()` and `count_by_bot()` functions to all 3 backends
+- **`commands/channel.py`** — Fixed `bot.encrypted_token` → `bot.token_encrypted`. Fixed `channel_bot_repo.list_all(platform=...)` (no such parameter) → conditional `get_by_platform()`. Fixed `encrypted_token=` → `token_encrypted=` in create
+
+### Tooling
+
+- **CI: MongoDB job** — Added missing `ty check` step (was present in minimal and PostgreSQL jobs but absent from MongoDB)
+- **Template pre-commit** — Bumped ruff-pre-commit from `v0.8.0` to `v0.15.0` (consistent with `pyproject.toml >=0.15.0`)
+
+### Dependencies
+
+- **pydantic-ai** `>=1.77.0` → `>=1.80.0` (all providers + pydantic-deep)
+- **pydantic-ai extras**: Added `duckduckgo` and `web-fetch` extras for WebSearch/WebFetch local fallback
+- **aiogram** `>=3.17,<4.0` (new — Telegram adapter)
+- **slack-sdk** `>=3.35.0` (new — Slack Web API, Socket Mode, Events API)
+- **cryptography** `>=44.0.0` (new — Fernet token encryption, gated under `use_telegram or use_slack`)
+
 ## [0.2.4] - 2026-04-09
 
 ### Security

@@ -29,11 +29,13 @@
 </p>
 
 <p align="center">
-  <b>🤖 5 AI Agent Frameworks</b> <i>(PydanticAI, LangChain, LangGraph, CrewAI, DeepAgents)</i>
+  <b>🤖 6 AI Agent Frameworks</b> <i>(PydanticAI, PydanticDeep, LangChain, LangGraph, CrewAI, DeepAgents)</i>
   <br>
   <b>📄 RAG Pipeline</b> <i>(Milvus, Qdrant, pgvector, ChromaDB)</i>
   <br>
   <b>⚡ FastAPI + Next.js 15</b> <i>(WebSocket streaming, real-time chat UI)</i>
+  <br>
+  <b>🔗 Conversation Sharing</b> <i>(direct sharing, public links, admin browser)</i>
   <br>
   <b>🔒 Enterprise-Ready</b> <i>(JWT, OAuth, admin panel, Celery, Docker, K8s)</i>
 </p>
@@ -310,10 +312,12 @@ Generated projects include **CLAUDE.md** and **AGENTS.md** files optimized for A
 
 ### 🤖 AI/LLM First
 
-- **5 AI Frameworks** - [PydanticAI](https://ai.pydantic.dev), [LangChain](https://python.langchain.com), [LangGraph](https://langchain-ai.github.io/langgraph/), [CrewAI](https://www.crewai.com), [DeepAgents](https://github.com/vstorm-co/pydantic-deepagents)
+- **6 AI Frameworks** - [PydanticAI](https://ai.pydantic.dev), [PydanticDeep](https://github.com/vstorm-co/pydantic-deep), [LangChain](https://python.langchain.com), [LangGraph](https://langchain-ai.github.io/langgraph/), [CrewAI](https://www.crewai.com), [DeepAgents](https://github.com/vstorm-co/pydantic-deepagents)
 - **4 LLM Providers** - OpenAI, Anthropic, Google Gemini, OpenRouter
 - **RAG** - Document ingestion, vector search, reranking (Milvus, Qdrant, ChromaDB, pgvector)
 - **WebSocket Streaming** - Real-time responses with full event access
+- **Messaging Channels** - Telegram and Slack multi-bot integration with polling, webhooks, per-thread sessions, group concurrency control
+- **Conversation Sharing** - Share conversations with users or via public links, admin conversation browser
 - **Conversation Persistence** - Save chat history to database
 - **Image Description** - Extract images from documents, describe via LLM vision
 - **Multimodal Embeddings** - Google Gemini embedding model (text + images)
@@ -340,7 +344,7 @@ Generated projects include **CLAUDE.md** and **AGENTS.md** files optimized for A
 
 | Category | Integrations |
 |----------|-------------|
-| **AI Frameworks** | PydanticAI, LangChain, LangGraph, CrewAI, DeepAgents |
+| **AI Frameworks** | PydanticAI, PydanticDeep, LangChain, LangGraph, CrewAI, DeepAgents |
 | **LLM Providers** | OpenAI, Anthropic, Google Gemini, OpenRouter |
 | **RAG / Vector Stores** | Milvus, Qdrant, ChromaDB, pgvector |
 | **RAG Sources** | Local files, API upload, Google Drive, S3/MinIO, Sync Sources (configurable, scheduled) |
@@ -349,6 +353,8 @@ Generated projects include **CLAUDE.md** and **AGENTS.md** files optimized for A
 | **Security** | Rate limiting, CORS, CSRF protection |
 | **Observability** | Logfire, LangSmith, Sentry, Prometheus |
 | **Admin** | SQLAdmin panel with auth |
+| **Collaboration** | Conversation sharing (direct + link), admin conversation browser |
+| **Messaging** | Telegram multi-bot (polling + webhook), Slack multi-bot (Events API + Socket Mode) |
 | **Events** | Webhooks, WebSockets |
 | **DevOps** | Docker, GitHub Actions, GitLab CI, Kubernetes |
 
@@ -472,7 +478,7 @@ See [Architecture Documentation](https://github.com/vstorm-co/full-stack-ai-agen
 
 ## 🤖 AI Agent
 
-Choose from **5 AI frameworks** and **4 LLM providers** when generating your project:
+Choose from **6 AI frameworks** and **4 LLM providers** when generating your project:
 
 ```bash
 # PydanticAI with OpenAI (default)
@@ -496,6 +502,7 @@ fastapi-fullstack create my_app --rag --database postgresql --task-queue celery
 | Framework | OpenAI | Anthropic | Gemini | OpenRouter |
 |-----------|:------:|:---------:|:------:|:----------:|
 | **PydanticAI** | ✓ | ✓ | ✓ | ✓ |
+| **PydanticDeep** | ✓ | ✓ | ✓ | - |
 | **LangChain** | ✓ | ✓ | ✓ | - |
 | **LangGraph** | ✓ | ✓ | ✓ | - |
 | **CrewAI** | ✓ | ✓ | ✓ | - |
@@ -619,7 +626,7 @@ uv run my_app rag-sync-s3 --collection docs --prefix reports/ --bucket my-bucket
 - **Image description** - Extract images from documents, describe via LLM vision API (opt-in)
 - **Chunking** - RecursiveCharacterTextSplitter with configurable size/overlap
 - **Reranking** - Cohere API or local CrossEncoder for improved search quality
-- **Agent integration** - All 5 AI frameworks get a `search_knowledge_base` tool automatically
+- **Agent integration** - All 6 AI frameworks get a `search_knowledge_base` tool automatically
 
 ---
 

@@ -1,5 +1,5 @@
 """API v1 router aggregation."""
-{%- if cookiecutter.use_jwt or cookiecutter.enable_oauth or cookiecutter.enable_webhooks %}
+{%- if cookiecutter.use_jwt or cookiecutter.enable_oauth or cookiecutter.enable_webhooks or cookiecutter.use_pydantic_deep or cookiecutter.use_telegram or cookiecutter.use_slack %}
 # ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
 {%- endif %}
 
@@ -18,6 +18,12 @@ from app.api.routes.v1 import sessions
 {%- if cookiecutter.use_database %}
 from app.api.routes.v1 import conversations
 {%- endif %}
+{%- if cookiecutter.use_jwt %}
+from app.api.routes.v1 import admin_conversations
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+from app.api.routes.v1 import projects
+{%- endif %}
 {%- if cookiecutter.enable_webhooks and cookiecutter.use_database %}
 from app.api.routes.v1 import webhooks
 {%- endif %}
@@ -27,6 +33,15 @@ from app.api.routes.v1 import rag
 {%- endif %}
 {%- if cookiecutter.use_jwt and (cookiecutter.use_postgresql or cookiecutter.use_sqlite) %}
 from app.api.routes.v1 import files
+{%- endif %}
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+from app.api.routes.v1 import channels
+{%- endif %}
+{%- if cookiecutter.use_telegram %}
+from app.api.routes.v1 import telegram_webhook
+{%- endif %}
+{%- if cookiecutter.use_slack %}
+from app.api.routes.v1 import slack_webhook
 {%- endif %}
 
 v1_router = APIRouter()
@@ -61,6 +76,12 @@ v1_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 v1_router.include_router(conversations.router, prefix="/conversations", tags=["conversations"])
 {%- endif %}
 
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+
+# Project management routes (DeepAgents)
+v1_router.include_router(projects.router, prefix="/projects", tags=["projects"])
+{%- endif %}
+
 {%- if cookiecutter.enable_webhooks and cookiecutter.use_database %}
 
 # Webhook routes
@@ -81,4 +102,28 @@ v1_router.include_router(rag.router, prefix="/rag", tags=["rag"])
 
 # File upload/download routes
 v1_router.include_router(files.router, tags=["files"])
+{%- endif %}
+
+{%- if cookiecutter.use_jwt %}
+
+# Admin: conversation browser + user listing
+v1_router.include_router(admin_conversations.router, prefix="/admin/conversations", tags=["admin-conversations"])
+{%- endif %}
+
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+
+# Messaging channel admin routes (shared across Telegram, Slack)
+v1_router.include_router(channels.router, prefix="/channels", tags=["channels"])
+{%- endif %}
+
+{%- if cookiecutter.use_telegram %}
+
+# Telegram webhook endpoint
+v1_router.include_router(telegram_webhook.router, prefix="/telegram", tags=["telegram"])
+{%- endif %}
+
+{%- if cookiecutter.use_slack %}
+
+# Slack Events API endpoint
+v1_router.include_router(slack_webhook.router, prefix="/slack", tags=["slack"])
 {%- endif %}

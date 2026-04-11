@@ -191,6 +191,8 @@ class TestProjectConfig:
             "use_github_actions",
             "use_gitlab_ci",
             "enable_kubernetes",
+            "use_telegram",
+            "use_slack",
         ]
 
         for key in expected_keys:
@@ -630,6 +632,44 @@ class TestOptionCombinationValidation:
         assert context["use_langchain"] is False
         assert context["use_langgraph"] is False
         assert context["use_crewai"] is False
+
+    def test_pydantic_deep_framework_context_flags(self) -> None:
+        """Test that PydanticDeep framework sets correct context flags."""
+        config = ProjectConfig(
+            project_name="test",
+            ai_framework=AIFrameworkType.PYDANTIC_DEEP,
+            background_tasks=BackgroundTaskType.NONE,
+        )
+        context = config.to_cookiecutter_context()
+
+        assert context["use_pydantic_deep"] is True
+        assert context["use_pydantic_ai"] is False
+        assert context["use_langchain"] is False
+        assert context["use_langgraph"] is False
+        assert context["use_crewai"] is False
+        assert context["use_deepagents"] is False
+
+    def test_openrouter_with_pydantic_deep_is_valid(self) -> None:
+        """Test that OpenRouter + PydanticDeep combination is accepted."""
+        config = ProjectConfig(
+            project_name="test",
+            llm_provider=LLMProviderType.OPENROUTER,
+            ai_framework=AIFrameworkType.PYDANTIC_DEEP,
+            background_tasks=BackgroundTaskType.NONE,
+        )
+        assert config.llm_provider == LLMProviderType.OPENROUTER
+        assert config.ai_framework == AIFrameworkType.PYDANTIC_DEEP
+
+    def test_langsmith_with_pydantic_deep_raises_error(self) -> None:
+        """Test that LangSmith + PydanticDeep is rejected (pydantic-deep uses Logfire)."""
+        with pytest.raises(ValidationError) as exc_info:
+            ProjectConfig(
+                project_name="test",
+                ai_framework=AIFrameworkType.PYDANTIC_DEEP,
+                enable_langsmith=True,
+                background_tasks=BackgroundTaskType.NONE,
+            )
+        assert "LangSmith requires LangChain" in str(exc_info.value)
 
 
 class TestLangSmithIntegration:

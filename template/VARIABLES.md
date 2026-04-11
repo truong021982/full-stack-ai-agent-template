@@ -229,16 +229,35 @@ These variables are set automatically by the generator.
 
 ---
 
+## Messaging Channels
+
+| Variable | Type | Default | Description | Dependencies |
+|----------|------|---------|-------------|--------------|
+| `use_telegram` | bool | `false` | Enable Telegram bot integration (multi-bot, polling + webhook, role-based access) | Requires JWT auth |
+| `use_slack` | bool | `false` | Enable Slack bot integration (Events API, threads, @mention support) | Requires JWT auth |
+
+**Notes:**
+
+- Telegram bots can run in polling mode (default, no public URL needed) or webhook mode (requires HTTPS)
+- Multiple bots are supported — each bot can have its own access policy, model override, and system prompt
+- Account linking uses a 6-digit OTP code (users type `/link` in the bot chat)
+- Bot tokens are encrypted at rest using Fernet (AES-128-CBC) from `CHANNEL_ENCRYPTION_KEY`
+- Rate limiting: 10 requests/min per user per bot (configurable per bot via access policy)
+
+---
+
 ## AI Agent
 
 | Variable | Type | Default | Description | Dependencies |
 |----------|------|---------|-------------|--------------|
-| `ai_framework` | enum | `"pydantic_ai"` | AI framework. Values: `pydantic_ai`, `langchain`, `langgraph`, `crewai`, `deepagents` | - |
+| `ai_framework` | enum | `"pydantic_ai"` | AI framework. Values: `pydantic_ai`, `langchain`, `langgraph`, `crewai`, `deepagents`, `pydantic_deep` | - |
 | `use_pydantic_ai` | bool | `true` | PydanticAI is selected | Computed from `ai_framework` |
 | `use_langchain` | bool | `false` | LangChain is selected | Computed from `ai_framework` |
 | `use_langgraph` | bool | `false` | LangGraph (ReAct agent) is selected | Computed from `ai_framework` |
 | `use_crewai` | bool | `false` | CrewAI (multi-agent crews) is selected | Computed from `ai_framework` |
-| `use_deepagents` | bool | `false` | DeepAgents (agentic coding) is selected | Computed from `ai_framework` |
+| `use_deepagents` | bool | `false` | DeepAgents (agentic coding, LangChain) is selected | Computed from `ai_framework` |
+| `use_pydantic_deep` | bool | `false` | PydanticDeep (deep agentic coding, Docker sandbox) is selected | Computed from `ai_framework` |
+| `sandbox_backend` | enum | `"docker"` | Agent sandbox environment for DeepAgents/PydanticDeep. Values: `docker`, `daytona`, `state` | Only used when `use_deepagents` or `use_pydantic_deep` is true |
 | `llm_provider` | enum | `"openai"` | LLM provider. Values: `openai`, `anthropic`, `google`, `openrouter` | - |
 | `use_openai` | bool | `true` | OpenAI is selected | Computed from `llm_provider` |
 | `use_anthropic` | bool | `false` | Anthropic is selected | Computed from `llm_provider` |

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.capabilities import WebFetch, WebSearch
 from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
@@ -112,6 +113,10 @@ class AssistantAgent:
             model=model,
             model_settings=ModelSettings(temperature=self.temperature),
             system_prompt=self.system_prompt,
+            capabilities=[
+                WebSearch(),
+                WebFetch(),
+            ],
         )
 
         self._register_tools(agent)

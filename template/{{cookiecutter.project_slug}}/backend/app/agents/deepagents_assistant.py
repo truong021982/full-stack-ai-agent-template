@@ -12,12 +12,18 @@ Human-in-the-loop (HITL) support:
 - Allowed decisions: approve, edit, reject
 - Interrupts are returned via stream/run and can be resumed with decisions
 
+Backend types (DEEPAGENTS_BACKEND_TYPE):
+- "state"  — in-memory, ephemeral per WebSocket connection (default)
+- "docker" — isolated Docker container per conversation (requires Docker)
+
 Configuration via settings:
+- DEEPAGENTS_BACKEND_TYPE: Backend type (state/local/docker)
+- DEEPAGENTS_WORKSPACE_DIR: Root dir for local/docker workspaces
+- DEEPAGENTS_DOCKER_IMAGE: Docker image for sandbox (default: python:3.12-slim)
+- DEEPAGENTS_DOCKER_TIMEOUT: Command timeout for docker backend (seconds)
+- DEEPAGENTS_MEMORY_PATHS: Comma-separated AGENTS.md memory file paths
 - DEEPAGENTS_SKILLS_PATHS: Comma-separated skill paths
-- DEEPAGENTS_ENABLE_FILESYSTEM: Enable file tools (default: True)
 - DEEPAGENTS_ENABLE_EXECUTE: Enable shell execution (default: False)
-- DEEPAGENTS_ENABLE_TODOS: Enable todo list tool (default: True)
-- DEEPAGENTS_ENABLE_SUBAGENTS: Enable subagent spawning (default: True)
 - DEEPAGENTS_INTERRUPT_TOOLS: Tools requiring human approval
 - DEEPAGENTS_ALLOWED_DECISIONS: Allowed decisions (approve,edit,reject)
 """
@@ -48,6 +54,7 @@ from app.agents.prompts import DEFAULT_SYSTEM_PROMPT
 {%- if cookiecutter.enable_rag %}
 from app.agents.prompts import get_system_prompt_with_rag
 {%- endif %}
+from app.agents.deepagents_docker_sandbox import DeepAgentsDockerSandbox
 from app.agents.tools import get_current_datetime
 {%- if cookiecutter.enable_web_search %}
 from app.agents.tools.web_search import web_search
@@ -135,6 +142,19 @@ def _parse_skills_paths() -> list[str] | None:
     return paths if paths else None
 
 
+def _parse_memory_paths() -> list[str] | None:
+    """Parse memory (AGENTS.md) file paths from settings.
+
+    Returns:
+        List of memory file paths or None if not configured.
+    """
+    if not settings.DEEPAGENTS_MEMORY_PATHS:
+        return None
+
+    paths = [p.strip() for p in settings.DEEPAGENTS_MEMORY_PATHS.split(",") if p.strip()]
+    return paths if paths else None
+
+
 def _parse_interrupt_config() -> dict[str, bool | dict[str, list[str]]] | None:
     """Parse interrupt_on configuration from settings.
 
@@ -179,7 +199,10 @@ class DeepAgentsAssistant:
     DeepAgents creates a LangGraph-based agent with built-in tools for
     filesystem operations, task management, and code execution.
 
-    Uses StateBackend (in-memory) for file state management.
+    Backend types (DEEPAGENTS_BACKEND_TYPE):
+    - "state"  — StateBackend, in-memory file state (default, no external deps)
+    - "docker" — DeepAgentsDockerSandbox, isolated container per conversation
+
     Skills can be configured via DEEPAGENTS_SKILLS_PATHS setting.
     Human-in-the-loop via DEEPAGENTS_INTERRUPT_TOOLS setting.
     """
@@ -190,7 +213,9 @@ class DeepAgentsAssistant:
         temperature: float | None = None,
         system_prompt: str | None = None,
         skills: list[str] | None = None,
+        memory: list[str] | None = None,
         interrupt_on: dict[str, bool | dict[str, list[str]]] | None = None,
+        conversation_id: str | None = None,
     ):
         """Initialize DeepAgentsAssistant.
 
@@ -199,7 +224,11 @@ class DeepAgentsAssistant:
             temperature: LLM temperature (default from settings.AI_TEMPERATURE)
             system_prompt: System prompt (default from DEFAULT_SYSTEM_PROMPT)
             skills: List of skill paths (default from settings.DEEPAGENTS_SKILLS_PATHS)
+            memory: List of AGENTS.md memory paths (default from settings.DEEPAGENTS_MEMORY_PATHS)
             interrupt_on: Dict of tool names to interrupt configs (default from settings)
+            conversation_id: Unique ID for the conversation — used to scope local/docker
+                workspaces. When DEEPAGENTS_BACKEND_TYPE="docker", one container is created
+                per conversation_id so file state persists across reconnects.
         """
         self.model_name = model_name or settings.AI_MODEL
         self.temperature = temperature or settings.AI_TEMPERATURE
@@ -209,9 +238,40 @@ class DeepAgentsAssistant:
         self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
 {%- endif %}
         self.skills = skills if skills is not None else _parse_skills_paths()
+        self.memory = memory if memory is not None else _parse_memory_paths()
         self.interrupt_on = interrupt_on if interrupt_on is not None else _parse_interrupt_config()
+        self.conversation_id = conversation_id
         self._graph = None
         self._checkpointer = MemorySaver()
+        self._docker_sandbox: DeepAgentsDockerSandbox | None = None
+
+    def _create_backend(self):
+        """Create the file-storage backend based on DEEPAGENTS_BACKEND_TYPE.
+
+        Backend types:
+        - "state"  → StateBackend factory (in-memory, ephemeral per session — default)
+        - "docker" → DeepAgentsDockerSandbox, isolated container per conversation
+
+        Returns:
+            BackendFactory (callable) for state, or BackendProtocol instance for
+            docker. Both are accepted by create_deep_agent().
+        """
+        if settings.DEEPAGENTS_BACKEND_TYPE.lower() == "docker":
+            container_name = (
+                f"deepagents-{self.conversation_id}"
+                if self.conversation_id
+                else None
+            )
+            self._docker_sandbox = DeepAgentsDockerSandbox(
+                image=settings.DEEPAGENTS_DOCKER_IMAGE,
+                workspace=settings.DEEPAGENTS_WORKSPACE_DIR,
+                timeout=settings.DEEPAGENTS_DOCKER_TIMEOUT,
+                container_name=container_name,
+            )
+            return self._docker_sandbox
+
+        # Default: state backend (factory form required by StateBackend)
+        return lambda rt: StateBackend(rt)
 
     def _create_model(self):
         """Create the LLM model for DeepAgents."""
@@ -244,33 +304,38 @@ class DeepAgentsAssistant:
         """Get or create the compiled graph instance.
 
         The agent is created with:
-        - StateBackend: In-memory file state management
-        - TodoListMiddleware: For task tracking (if enabled)
-        - FilesystemMiddleware: For file operations (if enabled)
-        - SubAgentMiddleware: For spawning subagents (if enabled)
+        - Backend: state / local / docker based on DEEPAGENTS_BACKEND_TYPE
+        - TodoListMiddleware: For task tracking
+        - FilesystemMiddleware: For file operations
+        - SubAgentMiddleware: For spawning subagents
+        - MemoryMiddleware: For AGENTS.md memory (if DEEPAGENTS_MEMORY_PATHS set)
         - Skills: Loaded from configured paths (if any)
         - interrupt_on: Human-in-the-loop config (if any)
         """
         if self._graph is None:
             model = self._create_model()
+            backend = self._create_backend()
 
-            # Create agent with StateBackend (in-memory)
             self._graph = create_deep_agent(
                 model=model,
                 system_prompt=self.system_prompt,
                 checkpointer=self._checkpointer,
-                backend=lambda rt: StateBackend(rt),
+                backend=backend,
                 skills=self.skills,
+                memory=self.memory,
                 interrupt_on=self.interrupt_on,
                 tools=DEEPAGENTS_CUSTOM_TOOLS,
             )
 
             logger.info(
-                f"DeepAgents initialized with model={self.model_name}, "
-                f"skills={self.skills}, "
-                f"interrupt_on={list(self.interrupt_on.keys()) if self.interrupt_on else None}, "
-                f"filesystem={settings.DEEPAGENTS_ENABLE_FILESYSTEM}, "
-                f"execute={settings.DEEPAGENTS_ENABLE_EXECUTE}"
+                "DeepAgents initialized: model=%s backend=%s skills=%s memory=%s "
+                "interrupt_on=%s execute=%s",
+                self.model_name,
+                settings.DEEPAGENTS_BACKEND_TYPE,
+                self.skills,
+                self.memory,
+                list(self.interrupt_on.keys()) if self.interrupt_on else None,
+                settings.DEEPAGENTS_ENABLE_EXECUTE,
             )
 
         return self._graph
@@ -538,18 +603,31 @@ class DeepAgentsAssistant:
 
 def get_agent(
     skills: list[str] | None = None,
+    memory: list[str] | None = None,
     interrupt_on: dict[str, bool | dict[str, list[str]]] | None = None,
+    conversation_id: str | None = None,
 ) -> DeepAgentsAssistant:
     """Factory function to create a DeepAgentsAssistant.
 
+    For "local" and "docker" backend types, pass conversation_id to scope
+    the workspace/container to a specific conversation so file state persists
+    across reconnects.
+
     Args:
         skills: Optional list of skill paths to override settings.
+        memory: Optional list of AGENTS.md memory paths to override settings.
         interrupt_on: Optional interrupt config to override settings.
+        conversation_id: Unique conversation ID for workspace/container scoping.
 
     Returns:
         Configured DeepAgentsAssistant instance.
     """
-    return DeepAgentsAssistant(skills=skills, interrupt_on=interrupt_on)
+    return DeepAgentsAssistant(
+        skills=skills,
+        memory=memory,
+        interrupt_on=interrupt_on,
+        conversation_id=conversation_id,
+    )
 
 
 async def run_agent(

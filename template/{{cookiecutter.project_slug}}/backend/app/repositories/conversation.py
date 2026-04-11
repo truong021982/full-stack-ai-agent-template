@@ -85,12 +85,18 @@ async def create_conversation(
 {%- if cookiecutter.use_jwt %}
     user_id: UUID | None = None,
 {%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    project_id: UUID | None = None,
+{%- endif %}
     title: str | None = None,
 ) -> Conversation:
     """Create a new conversation."""
     conversation = Conversation(
 {%- if cookiecutter.use_jwt %}
         user_id=user_id,
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+        project_id=project_id,
 {%- endif %}
         title=title,
     )
@@ -368,12 +374,18 @@ def create_conversation(
 {%- if cookiecutter.use_jwt %}
     user_id: str | None = None,
 {%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    project_id: str | None = None,
+{%- endif %}
     title: str | None = None,
 ) -> Conversation:
     """Create a new conversation."""
     conversation = Conversation(
 {%- if cookiecutter.use_jwt %}
         user_id=user_id,
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+        project_id=project_id,
 {%- endif %}
         title=title,
     )
@@ -652,12 +664,18 @@ async def create_conversation(
 {%- if cookiecutter.use_jwt %}
     user_id: str | None = None,
 {%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    project_id: str | None = None,
+{%- endif %}
     title: str | None = None,
 ) -> Conversation:
     """Create a new conversation."""
     conversation = Conversation(
 {%- if cookiecutter.use_jwt %}
         user_id=user_id,
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+        project_id=project_id,
 {%- endif %}
         title=title,
     )

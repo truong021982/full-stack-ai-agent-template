@@ -586,7 +586,13 @@ def prompt_ai_framework() -> AIFrameworkType:
         questionary.Choice("LangChain", value=AIFrameworkType.LANGCHAIN),
         questionary.Choice("LangGraph (ReAct agent)", value=AIFrameworkType.LANGGRAPH),
         questionary.Choice("CrewAI (multi-agent crews)", value=AIFrameworkType.CREWAI),
-        questionary.Choice("DeepAgents (agentic coding)", value=AIFrameworkType.DEEPAGENTS),
+        questionary.Choice(
+            "DeepAgents (agentic coding, LangChain)", value=AIFrameworkType.DEEPAGENTS
+        ),
+        questionary.Choice(
+            "PydanticDeep (deep agentic coding, Docker sandbox)",
+            value=AIFrameworkType.PYDANTIC_DEEP,
+        ),
     ]
 
     return cast(
@@ -601,12 +607,51 @@ def prompt_ai_framework() -> AIFrameworkType:
     )
 
 
+def prompt_sandbox_backend(ai_framework: AIFrameworkType) -> str:
+    """Prompt for sandbox/environment backend type.
+
+    Shown only when the selected AI framework supports sandbox backends
+    (DeepAgents, PydanticDeep).
+    """
+    console.print()
+    console.print("[bold cyan]Agent Sandbox Environment[/]")
+    console.print()
+
+    if ai_framework == AIFrameworkType.PYDANTIC_DEEP:
+        choices = [
+            questionary.Choice(
+                "Docker sandbox (recommended — isolated, persistent)", value="docker"
+            ),
+            questionary.Choice("Daytona workspace (cloud dev environment)", value="daytona"),
+            questionary.Choice("State (in-memory, ephemeral — dev only)", value="state"),
+        ]
+    else:
+        # DeepAgents
+        choices = [
+            questionary.Choice(
+                "Docker sandbox (recommended — isolated, persistent)", value="docker"
+            ),
+            questionary.Choice("State (in-memory, ephemeral — dev only)", value="state"),
+        ]
+
+    return cast(
+        str,
+        _check_cancelled(
+            questionary.select(
+                "Select agent sandbox environment:",
+                choices=choices,
+                default=choices[0],
+            ).ask()
+        ),
+    )
+
+
 def prompt_llm_provider(ai_framework: AIFrameworkType) -> LLMProviderType:
     """Prompt for LLM provider selection.
 
     Args:
         ai_framework: The selected AI framework. OpenRouter is only
-            available for PydanticAI (not LangChain, LangGraph, CrewAI, or DeepAgents).
+            available for PydanticAI and PydanticDeep (both use pydantic-ai under the hood).
     """
     console.print()
     console.print("[bold cyan]LLM Provider[/]")
@@ -618,8 +663,8 @@ def prompt_llm_provider(ai_framework: AIFrameworkType) -> LLMProviderType:
         questionary.Choice("Google Gemini (gemini-2.0-flash)", value=LLMProviderType.GOOGLE),
     ]
 
-    # OpenRouter only available for PydanticAI (not LangChain, LangGraph, or CrewAI)
-    if ai_framework == AIFrameworkType.PYDANTIC_AI:
+    # OpenRouter available for PydanticAI and PydanticDeep (both use pydantic-ai)
+    if ai_framework in (AIFrameworkType.PYDANTIC_AI, AIFrameworkType.PYDANTIC_DEEP):
         choices.append(
             questionary.Choice("OpenRouter (multi-provider)", value=LLMProviderType.OPENROUTER)
         )
@@ -767,6 +812,35 @@ def prompt_rag_config() -> RAGFeatures:
     )
 
 
+def prompt_channels() -> tuple[bool, bool]:
+    """Prompt for messaging channel integrations (Telegram, Slack)."""
+    console.print()
+    console.print("[bold cyan]Messaging Channels[/]")
+    console.print()
+
+    use_telegram = cast(
+        bool,
+        _check_cancelled(
+            questionary.confirm(
+                "Enable Telegram bot integration? (multi-bot, polling + webhook, role-based access)",
+                default=False,
+            ).ask()
+        ),
+    )
+
+    use_slack = cast(
+        bool,
+        _check_cancelled(
+            questionary.confirm(
+                "Enable Slack bot integration? (Events API, threads, @mention support)",
+                default=False,
+            ).ask()
+        ),
+    )
+
+    return use_telegram, use_slack
+
+
 def prompt_python_version() -> str:
     """Prompt for Python version selection."""
     console.print()
@@ -894,18 +968,28 @@ def run_interactive_prompts() -> ProjectConfig:
     rag_features = RAGFeatures()
 
     ai_framework = prompt_ai_framework()
+
+    # Sandbox backend selection for agentic coding frameworks
+    sandbox_backend = "docker"
+    if ai_framework in (AIFrameworkType.DEEPAGENTS, AIFrameworkType.PYDANTIC_DEEP):
+        sandbox_backend = prompt_sandbox_backend(ai_framework)
+
     llm_provider = prompt_llm_provider(ai_framework)
 
     # RAG Logic
     rag_features = prompt_rag_config()
 
-    # LangSmith for LangChain-ecosystem frameworks
+    # LangSmith for LangChain-ecosystem frameworks only
+    # (PydanticDeep uses Logfire for observability, not LangSmith)
     if ai_framework in (
         AIFrameworkType.LANGCHAIN,
         AIFrameworkType.LANGGRAPH,
         AIFrameworkType.DEEPAGENTS,
     ):
         enable_langsmith = prompt_langsmith()
+
+    # Messaging channel integrations
+    use_telegram, use_slack = prompt_channels()
 
     # Rate limit configuration (when rate limiting is enabled)
     rate_limit_requests = 100
@@ -939,9 +1023,12 @@ def run_interactive_prompts() -> ProjectConfig:
         logfire_features=logfire_features,
         background_tasks=background_tasks,
         ai_framework=ai_framework,
+        sandbox_backend=sandbox_backend,
         llm_provider=llm_provider,
         rag_features=rag_features,
         enable_langsmith=enable_langsmith,
+        use_telegram=use_telegram,
+        use_slack=use_slack,
         rate_limit_requests=rate_limit_requests,
         rate_limit_period=rate_limit_period,
         rate_limit_storage=rate_limit_storage,
@@ -990,11 +1077,17 @@ def show_summary(config: ProjectConfig) -> None:
     if config.enable_admin_panel:
         enabled_features.append("SQL Admin Panel")
     ai_info = f"AI Agent ({config.ai_framework.value}, {config.llm_provider.value})"
+    if config.ai_framework in (AIFrameworkType.DEEPAGENTS, AIFrameworkType.PYDANTIC_DEEP):
+        ai_info += f", sandbox: {config.sandbox_backend}"
     if config.rag_features.enable_rag:
         ai_info += f" + RAG ({config.rag_features.vector_store.value})"
     enabled_features.append(ai_info)
     if config.enable_webhooks:
         enabled_features.append("Webhooks")
+    if config.use_telegram:
+        enabled_features.append("Telegram")
+    if config.use_slack:
+        enabled_features.append("Slack")
     if config.enable_docker:
         enabled_features.append("Docker")
 

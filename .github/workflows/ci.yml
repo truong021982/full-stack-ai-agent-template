@@ -294,6 +294,10 @@ jobs:
           uv run ruff check .
           uv run ruff format --check .
 
+      - name: Run type check
+        working-directory: /tmp/projects/test_mongo/backend
+        run: uv run ty check
+
       - name: Run tests
         working-directory: /tmp/projects/test_mongo/backend
         env:

@@ -145,6 +145,58 @@ def get_conversation_service() -> ConversationService:
 
 
 ConversationSvc = Annotated[ConversationService, Depends(get_conversation_service)]
+
+from app.services.conversation_share import ConversationShareService
+
+
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+def get_conversation_share_service(db: DBSession) -> ConversationShareService:
+    """Create ConversationShareService instance with database session."""
+    return ConversationShareService(db)
+{%- elif cookiecutter.use_mongodb %}
+def get_conversation_share_service() -> ConversationShareService:
+    """Create ConversationShareService instance."""
+    return ConversationShareService()
+{%- endif %}
+
+
+ConversationShareSvc = Annotated[ConversationShareService, Depends(get_conversation_share_service)]
+{%- endif %}
+
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+from app.services.project import ProjectService
+
+
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+def get_project_service(db: DBSession) -> ProjectService:
+    """Create ProjectService instance with database session."""
+    return ProjectService(db)
+{%- elif cookiecutter.use_mongodb %}
+def get_project_service() -> ProjectService:
+    """Create ProjectService instance."""
+    return ProjectService()
+{%- endif %}
+
+
+ProjectSvc = Annotated[ProjectService, Depends(get_project_service)]
+{%- endif %}
+
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+from app.services.channel_bot import ChannelBotService
+
+
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+def get_channel_bot_service(db: DBSession) -> ChannelBotService:
+    """Create ChannelBotService instance with database session."""
+    return ChannelBotService(db)
+{%- elif cookiecutter.use_mongodb %}
+def get_channel_bot_service() -> ChannelBotService:
+    """Create ChannelBotService instance."""
+    return ChannelBotService()
+{%- endif %}
+
+
+ChannelBotSvc = Annotated[ChannelBotService, Depends(get_channel_bot_service)]
 {%- endif %}
 
 {%- if cookiecutter.enable_rag and (cookiecutter.use_postgresql or cookiecutter.use_sqlite) %}

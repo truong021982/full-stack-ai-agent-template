@@ -3,7 +3,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-{%- if cookiecutter.enable_redis or cookiecutter.enable_rag %}
+{%- if cookiecutter.enable_redis or cookiecutter.enable_rag or cookiecutter.use_telegram or cookiecutter.use_slack %}
 from typing import TypedDict
 {%- endif %}
 
@@ -45,7 +45,7 @@ from app.rag.vectorstore import BaseVectorStore
 {%- endif %}
 {%- endif %}
 
-{%- if cookiecutter.enable_redis or cookiecutter.enable_rag %}
+{%- if cookiecutter.enable_redis or cookiecutter.enable_rag or cookiecutter.use_telegram or cookiecutter.use_slack %}
 
 
 class LifespanState(TypedDict, total=False):
@@ -62,14 +62,14 @@ class LifespanState(TypedDict, total=False):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[{% if cookiecutter.enable_redis or cookiecutter.enable_rag %}LifespanState{% else %}None{% endif %}, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[{% if cookiecutter.enable_redis or cookiecutter.enable_rag or cookiecutter.use_telegram or cookiecutter.use_slack %}LifespanState{% else %}None{% endif %}, None]:
     """Application lifespan - startup and shutdown events.
 
     Resources yielded here are available via request.state in route handlers.
     See: https://asgi.readthedocs.io/en/latest/specs/lifespan.html#lifespan-state
     """
     # === Startup ===
-{%- if cookiecutter.enable_redis or cookiecutter.enable_rag %}
+{%- if cookiecutter.enable_redis or cookiecutter.enable_rag or cookiecutter.use_telegram or cookiecutter.use_slack %}
     state: LifespanState = {}
 {%- endif %}
 {%- if cookiecutter.enable_logfire %}
@@ -168,7 +168,71 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[{% if cookiecutter.enable_red
 {%- endif %}
 {%- endif %}
 
-{%- if cookiecutter.enable_redis or cookiecutter.enable_rag %}
+{%- if cookiecutter.use_telegram %}
+
+    # === Telegram Channel Polling ===
+    from app.channels import register_adapter
+    from app.channels.telegram import TelegramAdapter
+    from app.core.channel_crypto import decrypt_token
+    _telegram_adapter = TelegramAdapter()
+    register_adapter(_telegram_adapter)
+    try:
+{%- if cookiecutter.use_postgresql %}
+        from app.db.session import get_db_context
+        async with get_db_context() as _db:
+            from app.repositories.channel_bot import get_active_polling_bots
+            _polling_bots = await get_active_polling_bots(_db, "telegram")
+{%- elif cookiecutter.use_sqlite %}
+        from contextlib import contextmanager as _cm
+        from app.db.session import get_db_session as _get_db
+        with _cm(_get_db)() as _db:
+            from app.repositories.channel_bot import get_active_polling_bots
+            _polling_bots = get_active_polling_bots(_db, "telegram")
+{%- elif cookiecutter.use_mongodb %}
+        from app.repositories.channel_bot import get_active_polling_bots
+        _polling_bots = await get_active_polling_bots("telegram")
+{%- endif %}
+        for _bot in _polling_bots:
+            _token = decrypt_token(_bot.token_encrypted)
+            await _telegram_adapter.start_polling(str(_bot.id), _token)
+        logger.info("Telegram: polling started for %d bot(s)", len(_polling_bots))
+    except Exception as _exc:
+        logger.error("Telegram: failed to start polling: %s", _exc)
+{%- endif %}
+
+{%- if cookiecutter.use_slack %}
+
+    # === Slack Adapter (Socket Mode polling for dev, Events API for prod) ===
+    from app.channels import register_adapter as _slack_register
+    from app.channels.slack import SlackAdapter
+    from app.core.channel_crypto import decrypt_token as _slack_decrypt
+    _slack_adapter = SlackAdapter()
+    _slack_register(_slack_adapter)
+    try:
+{%- if cookiecutter.use_postgresql %}
+        from app.db.session import get_db_context
+        async with get_db_context() as _slack_db:
+            from app.repositories.channel_bot import get_active_polling_bots
+            _slack_bots = await get_active_polling_bots(_slack_db, "slack")
+{%- elif cookiecutter.use_sqlite %}
+        from contextlib import contextmanager as _slack_cm
+        from app.db.session import get_db_session as _slack_get_db
+        with _slack_cm(_slack_get_db)() as _slack_db:
+            from app.repositories.channel_bot import get_active_polling_bots
+            _slack_bots = get_active_polling_bots(_slack_db, "slack")
+{%- elif cookiecutter.use_mongodb %}
+        from app.repositories.channel_bot import get_active_polling_bots
+        _slack_bots = await get_active_polling_bots("slack")
+{%- endif %}
+        for _sbot in _slack_bots:
+            _stoken = _slack_decrypt(_sbot.token_encrypted)
+            await _slack_adapter.start_polling(str(_sbot.id), _stoken)
+        logger.info("Slack: Socket Mode started for %d bot(s)", len(_slack_bots))
+    except Exception as _slack_exc:
+        logger.error("Slack: failed to start Socket Mode: %s", _slack_exc)
+{%- endif %}
+
+{%- if cookiecutter.enable_redis or cookiecutter.enable_rag or cookiecutter.use_telegram or cookiecutter.use_slack %}
     yield state
 {%- else %}
     yield
@@ -217,6 +281,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[{% if cookiecutter.enable_red
     except Exception:
         pass
 {%- endif %}
+{%- endif %}
+
+{%- if cookiecutter.use_telegram %}
+    for _bid in list(_telegram_adapter._polling_tasks.keys()):
+        await _telegram_adapter.stop_polling(_bid)
+{%- endif %}
+
+{%- if cookiecutter.use_slack %}
+    for _sbid in list(_slack_adapter._socket_tasks.keys()):
+        await _slack_adapter.stop_polling(_sbid)
 {%- endif %}
 
 
