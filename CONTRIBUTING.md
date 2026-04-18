@@ -1,47 +1,56 @@
 # Contributing
 
-Thank you for your interest in contributing to fastapi-fullstack!
+Thank you for your interest in contributing to Full-Stack AI Agent Template!
+
+## Developer Certificate of Origin (DCO)
+
+This project uses a [Developer Certificate of Origin (DCO)](DCO) to ensure that contributors have the right to submit their contributions.
+
+By submitting a contribution, you agree to the terms of the DCO. You must sign off on every commit:
+
+```bash
+git commit -s -m "Your commit message"
+```
+
+This adds a `Signed-off-by` line to your commit message:
+
+```
+Signed-off-by: Your Name <your@email.com>
+```
+
+If you forget, you can amend your last commit:
+
+```bash
+git commit --amend -s
+```
+
+## How to Contribute
+
+1. **Fork** the repository
+2. **Create a branch** for your feature or fix
+3. **Make your changes** following the project conventions
+4. **Run tests** to ensure nothing is broken:
+   ```bash
+   uv run pytest
+   uv run ruff check . --fix
+   uv run ruff format .
+   uv run ty check
+   ```
+5. **Commit** with sign-off (`git commit -s`)
+6. **Open a Pull Request** against `main`
 
 ## Development Setup
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/vstorm-co/full-stack-ai-agent-template.git
-   cd full-stack-ai-agent-template
-   ```
-
-2. Install dependencies:
-   ```bash
-   uv sync --dev
-   ```
-
-3. Run tests:
-   ```bash
-   pytest
-   ```
-
-## Code Style
-
-- Use [ruff](https://github.com/astral-sh/ruff) for linting and formatting
-- Run `ruff check .` and `ruff format .` before committing
-- Type hints are required for all public functions
-
-## Pull Request Process
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make your changes
-4. Run tests and linting
-5. Commit with a descriptive message
-6. Push to your fork
-7. Open a Pull Request
+```bash
+git clone https://github.com/vstorm-co/full-stack-ai-agent-template.git
+cd full-stack-ai-agent-template
+uv sync
+```
 
 ## Reporting Issues
 
-- Use GitHub Issues for bug reports and feature requests
-- Include reproduction steps for bugs
-- Check existing issues before creating a new one
+Use [GitHub Issues](https://github.com/vstorm-co/full-stack-ai-agent-template/issues) to report bugs or request features.
 
-## License
+## Code of Conduct
 
-By contributing, you agree that your contributions will be licensed under the project's license.
+Be respectful and constructive. We follow the [Contributor Covenant](https://www.contributor-covenant.org/).

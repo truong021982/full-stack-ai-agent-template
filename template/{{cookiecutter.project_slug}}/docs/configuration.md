@@ -206,6 +206,8 @@ AI_AVAILABLE_MODELS=["gpt-4.1-mini","gpt-4.1","claude-sonnet-4-6"]
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `DEEPAGENTS_BACKEND_TYPE` | `state` | Backend: `state` (in-memory, ephemeral) |
+| `DEEPAGENTS_MEMORY_PATHS` | (none) | Comma-separated AGENTS.md memory file paths loaded at agent startup |
 | `DEEPAGENTS_SKILLS_PATHS` | (none) | Comma-separated paths to skill directories |
 | `DEEPAGENTS_ENABLE_FILESYSTEM` | `true` | Enable filesystem tools (ls, read, write, edit, glob, grep) |
 | `DEEPAGENTS_ENABLE_EXECUTE` | `false` | Enable shell execution (disabled by default for security) |
@@ -352,6 +354,24 @@ is needed.
 | `S3_RAG_BUCKET` | `{{ cookiecutter.project_slug }}-rag` | Bucket name |
 | `S3_RAG_REGION` | `us-east-1` | AWS region |
 {%- endif %}
+{%- endif %}
+
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+
+## Messaging Channels
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHANNEL_ENCRYPTION_KEY` | (empty) | Fernet key for encrypting bot tokens. Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+{%- if cookiecutter.use_telegram %}
+| `TELEGRAM_WEBHOOK_BASE_URL` | (empty) | Base URL for Telegram webhook (e.g. `https://yourdomain.com`). Required only in webhook mode |
+{%- endif %}
+{%- if cookiecutter.use_slack %}
+| `SLACK_SIGNING_SECRET` | (empty) | Slack app signing secret for Events API signature verification |
+| `SLACK_BOT_TOKEN` | (empty) | Slack bot OAuth token (`xoxb-...`) for sending messages via Web API |
+| `SLACK_APP_TOKEN` | (empty) | Slack app-level token (`xapp-...`) for Socket Mode (development only) |
+{%- endif %}
+
 {%- endif %}
 
 {%- if cookiecutter.use_celery %}

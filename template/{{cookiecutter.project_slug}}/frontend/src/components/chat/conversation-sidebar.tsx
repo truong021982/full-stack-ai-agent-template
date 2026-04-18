@@ -16,8 +16,14 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+{%- if cookiecutter.use_jwt %}
+  Share2,
+{%- endif %}
 } from "lucide-react";
 import type { Conversation } from "@/types";
+{%- if cookiecutter.use_jwt %}
+import { ShareDialog } from "./share-dialog";
+{%- endif %}
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -26,6 +32,9 @@ interface ConversationItemProps {
   onDelete: () => void;
   onArchive: () => void;
   onRename: (title: string) => void;
+{%- if cookiecutter.use_jwt %}
+  onShare: () => void;
+{%- endif %}
 }
 
 function ConversationItem({
@@ -35,6 +44,9 @@ function ConversationItem({
   onDelete,
   onArchive,
   onRename,
+{%- if cookiecutter.use_jwt %}
+  onShare,
+{%- endif %}
 }: ConversationItemProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -117,6 +129,19 @@ function ConversationItem({
                 <Pencil className="h-4 w-4" />
                 Rename
               </button>
+{%- if cookiecutter.use_jwt %}
+              <button
+                className="flex w-full items-center gap-2 px-3 py-3 text-sm hover:bg-secondary min-h-[44px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare();
+                  setShowMenu(false);
+                }}
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </button>
+{%- endif %}
               <button
                 className="flex w-full items-center gap-2 px-3 py-3 text-sm hover:bg-secondary min-h-[44px]"
                 onClick={(e) => {
@@ -173,6 +198,9 @@ function ConversationList({
   onLoadMore,
 }: ConversationListProps) {
   const activeConversations = (conversations ?? []).filter((c) => !c.is_archived);
+{%- if cookiecutter.use_jwt %}
+  const [shareConversationId, setShareConversationId] = useState<string | null>(null);
+{%- endif %}
 
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -225,11 +253,26 @@ function ConversationList({
                 onDelete={() => onDelete(conversation.id)}
                 onArchive={() => onArchive(conversation.id)}
                 onRename={(title) => onRename(conversation.id, title)}
+{%- if cookiecutter.use_jwt %}
+                onShare={() => setShareConversationId(conversation.id)}
+{%- endif %}
               />
             ))}
           </div>
         )}
       </div>
+
+{%- if cookiecutter.use_jwt %}
+      {shareConversationId && (
+        <ShareDialog
+          conversationId={shareConversationId}
+          open={!!shareConversationId}
+          onOpenChange={(open) => {
+            if (!open) setShareConversationId(null);
+          }}
+        />
+      )}
+{%- endif %}
     </>
   );
 }

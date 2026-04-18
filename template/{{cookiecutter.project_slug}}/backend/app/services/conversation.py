@@ -4,6 +4,7 @@
 Contains business logic for conversation, message, and tool call operations.
 """
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -13,6 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
 from app.db.models.conversation import Conversation, Message, ToolCall
 from app.repositories import conversation_repo
+{%- if cookiecutter.use_jwt %}
+from app.repositories import conversation_share_repo
+{%- endif %}
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationUpdate,
@@ -20,6 +24,12 @@ from app.schemas.conversation import (
     ToolCallCreate,
     ToolCallComplete,
 )
+
+
+logger = logging.getLogger(__name__)
+
+# Maximum number of conversations to export in a single request to prevent DoS.
+MAX_EXPORT_LIMIT = 1000
 
 
 class ConversationService:
@@ -84,10 +94,15 @@ class ConversationService:
             and conversation.user_id is not None
             and str(conversation.user_id) != str(user_id)
         ):
-            raise NotFoundError(
-                message="Conversation not found",
-                details={"conversation_id": str(conversation_id)},
+            # Not the owner — check if user has a share granting access
+            share = await conversation_share_repo.get_share(
+                self.db, conversation_id, user_id
             )
+            if not share:
+                raise NotFoundError(
+                    message="Conversation not found",
+                    details={"conversation_id": str(conversation_id)},
+                )
 {%- endif %}
         return conversation
 
@@ -133,6 +148,9 @@ class ConversationService:
             self.db,
 {%- if cookiecutter.use_jwt %}
             user_id=data.user_id,
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+            project_id=data.project_id,
 {%- endif %}
             title=data.title,
         )
@@ -366,7 +384,7 @@ class ConversationService:
         await self.db.execute(
             sa_update(ChatFile).where(ChatFile.id.in_(file_uuids)).values(message_id=message_id)
         )
-        await self.db.commit()
+        await self.db.flush()
 
 
 {%- elif cookiecutter.use_sqlite %}
@@ -383,6 +401,9 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import NotFoundError
 from app.db.models.conversation import Conversation, Message, ToolCall
 from app.repositories import conversation_repo
+{%- if cookiecutter.use_jwt %}
+from app.repositories import conversation_share_repo
+{%- endif %}
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationUpdate,
@@ -914,6 +935,17 @@ class ConversationService:
             )
         return True
 
+    async def get_conversation_with_messages(
+        self,
+        conversation_id: str,
+    ) -> Conversation:
+        """Get conversation with messages (admin access).
+
+        Raises:
+            NotFoundError: If conversation does not exist.
+        """
+        return await self.get_conversation(conversation_id, include_messages=True)
+
     # Message Methods
 
     async def get_message(self, message_id: str) -> Message:
@@ -949,7 +981,6 @@ class ConversationService:
             conversation_id,
             skip=skip,
             limit=limit,
-            include_tool_calls=include_tool_calls,
         )
         total = await conversation_repo.count_messages(conversation_id)
         return items, total

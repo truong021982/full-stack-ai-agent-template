@@ -49,6 +49,17 @@ and code execution.
 from app.agents.deepagents_assistant import AgentContext, AgentState, DeepAgentsAssistant
 
 __all__ = ["DeepAgentsAssistant", "AgentContext", "AgentState"]
+{%- elif cookiecutter.use_pydantic_deep %}
+"""AI Agents module using PydanticDeep.
+
+This module contains a deep agentic coding assistant built with pydantic-deep.
+PydanticDeep is built on PydanticAI and provides filesystem operations,
+task management, subagent delegation, skills, memory, and Docker sandbox support.
+"""
+
+from app.agents.pydantic_deep_assistant import PydanticDeepAssistant, PydanticDeepContext
+
+__all__ = ["PydanticDeepAssistant", "PydanticDeepContext"]
 {%- else %}
 """AI Agents - not configured."""
 {%- endif %}

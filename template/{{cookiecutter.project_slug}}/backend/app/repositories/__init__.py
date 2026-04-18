@@ -1,5 +1,5 @@
 """Repository layer for database operations."""
-{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite or cookiecutter.use_jwt or cookiecutter.enable_webhooks %}
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite or cookiecutter.use_jwt or cookiecutter.enable_webhooks or cookiecutter.use_pydantic_deep %}
 # ruff: noqa: I001, RUF022 - Imports structured for Jinja2 template conditionals
 {%- endif %}
 {%- if cookiecutter.use_jwt %}
@@ -27,6 +27,17 @@ from app.repositories import sync_source as sync_source_repo
 {%- if cookiecutter.use_jwt %}
 
 from app.repositories import chat_file as chat_file_repo
+from app.repositories import conversation_share as conversation_share_repo
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+
+from app.repositories import project as project_repo
+{%- endif %}
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+
+from app.repositories import channel_bot as channel_bot_repo
+from app.repositories import channel_identity as channel_identity_repo
+from app.repositories import channel_session as channel_session_repo
 {%- endif %}
 
 __all__ = [
@@ -49,5 +60,14 @@ __all__ = [
 {%- endif %}
 {%- if cookiecutter.use_jwt %}
     "chat_file_repo",
+    "conversation_share_repo",
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    "project_repo",
+{%- endif %}
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+    "channel_bot_repo",
+    "channel_identity_repo",
+    "channel_session_repo",
 {%- endif %}
 ]

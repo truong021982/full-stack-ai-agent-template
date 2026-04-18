@@ -472,7 +472,7 @@ async def get_conversation(
     return await conversation_service.get_conversation(
         conversation_id, include_messages=True,
 {%- if cookiecutter.use_jwt %}
-        user_id=current_user.id,
+        user_id=str(current_user.id),
 {%- endif %}
     )
 
@@ -493,7 +493,7 @@ async def update_conversation(
     return await conversation_service.update_conversation(
         conversation_id, data,
 {%- if cookiecutter.use_jwt %}
-        user_id=current_user.id,
+        user_id=str(current_user.id),
 {%- endif %}
     )
 
@@ -513,7 +513,7 @@ async def delete_conversation(
     await conversation_service.delete_conversation(
         conversation_id,
 {%- if cookiecutter.use_jwt %}
-        user_id=current_user.id,
+        user_id=str(current_user.id),
 {%- endif %}
     )
 
@@ -536,7 +536,7 @@ async def archive_conversation(
     return await conversation_service.archive_conversation(
         conversation_id,
 {%- if cookiecutter.use_jwt %}
-        user_id=current_user.id,
+        user_id=str(current_user.id),
 {%- endif %}
     )
 
@@ -579,4 +579,207 @@ async def add_message(
     return await conversation_service.add_message(conversation_id, data)
 
 
+{%- endif %}
+
+{%- if cookiecutter.use_jwt %}
+
+# Sharing endpoints
+
+from app.api.deps import ConversationShareSvc
+from app.schemas.conversation_share import ConversationShareCreate, ConversationShareList, ConversationShareRead
+
+
+{%- if cookiecutter.use_postgresql %}
+
+
+@router.get("/shared-with-me", response_model=ConversationList)
+async def list_shared_with_me(
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> Any:
+    """List conversations shared with the current user."""
+    items, total = await share_service.list_shared_with_me(current_user.id, skip=skip, limit=limit)
+    return ConversationList(items=items, total=total)
+
+
+@router.post("/{conversation_id}/shares", response_model=ConversationShareRead, status_code=status.HTTP_201_CREATED)
+async def share_conversation(
+    conversation_id: UUID,
+    data: ConversationShareCreate,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """Share a conversation with another user or generate a public link."""
+    result = await share_service.share_conversation(
+        conversation_id,
+        shared_by=current_user.id,
+        shared_with=data.shared_with,
+        generate_link=data.generate_link,
+        permission=data.permission,
+    )
+    return result["share"]
+
+
+@router.get("/{conversation_id}/shares", response_model=ConversationShareList)
+async def list_shares(
+    conversation_id: UUID,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """List all shares for a conversation (owner only)."""
+    shares = await share_service.list_shares(conversation_id, current_user.id)
+    return ConversationShareList(items=shares, total=len(shares))
+
+
+@router.delete("/{conversation_id}/shares/{share_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def revoke_share(
+    conversation_id: UUID,
+    share_id: UUID,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> None:
+    """Revoke a conversation share."""
+    await share_service.revoke_share(share_id, current_user.id)
+
+
+@router.get("/shared/{token}")
+async def get_shared_conversation(
+    token: str,
+    share_service: ConversationShareSvc,
+) -> Any:
+    """Access a shared conversation via public token (no auth required)."""
+    return await share_service.get_by_token(token)
+
+
+{%- elif cookiecutter.use_sqlite %}
+
+
+@router.get("/shared-with-me", response_model=ConversationList)
+def list_shared_with_me(
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> Any:
+    """List conversations shared with the current user."""
+    items, total = share_service.list_shared_with_me(str(current_user.id), skip=skip, limit=limit)
+    return ConversationList(items=items, total=total)
+
+
+@router.post("/{conversation_id}/shares", response_model=ConversationShareRead, status_code=status.HTTP_201_CREATED)
+def share_conversation(
+    conversation_id: str,
+    data: ConversationShareCreate,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """Share a conversation with another user or generate a public link."""
+    result = share_service.share_conversation(
+        conversation_id,
+        shared_by=str(current_user.id),
+        shared_with=data.shared_with,
+        generate_link=data.generate_link,
+        permission=data.permission,
+    )
+    return result["share"]
+
+
+@router.get("/{conversation_id}/shares", response_model=ConversationShareList)
+def list_shares(
+    conversation_id: str,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """List all shares for a conversation (owner only)."""
+    shares = share_service.list_shares(conversation_id, str(current_user.id))
+    return ConversationShareList(items=shares, total=len(shares))
+
+
+@router.delete("/{conversation_id}/shares/{share_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def revoke_share(
+    conversation_id: str,
+    share_id: str,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> None:
+    """Revoke a conversation share."""
+    share_service.revoke_share(share_id, str(current_user.id))
+
+
+@router.get("/shared/{token}")
+def get_shared_conversation(
+    token: str,
+    share_service: ConversationShareSvc,
+) -> Any:
+    """Access a shared conversation via public token (no auth required)."""
+    return share_service.get_by_token(token)
+
+
+{%- elif cookiecutter.use_mongodb %}
+
+
+@router.get("/shared-with-me", response_model=ConversationList)
+async def list_shared_with_me(
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> Any:
+    """List conversations shared with the current user."""
+    items, total = await share_service.list_shared_with_me(str(current_user.id), skip=skip, limit=limit)
+    return ConversationList(items=items, total=total)
+
+
+@router.post("/{conversation_id}/shares", response_model=ConversationShareRead, status_code=status.HTTP_201_CREATED)
+async def share_conversation(
+    conversation_id: str,
+    data: ConversationShareCreate,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """Share a conversation with another user or generate a public link."""
+    result = await share_service.share_conversation(
+        conversation_id,
+        shared_by=str(current_user.id),
+        shared_with=data.shared_with,
+        generate_link=data.generate_link,
+        permission=data.permission,
+    )
+    return result["share"]
+
+
+@router.get("/{conversation_id}/shares", response_model=ConversationShareList)
+async def list_shares(
+    conversation_id: str,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> Any:
+    """List all shares for a conversation (owner only)."""
+    shares = await share_service.list_shares(conversation_id, str(current_user.id))
+    return ConversationShareList(items=shares, total=len(shares))
+
+
+@router.delete("/{conversation_id}/shares/{share_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def revoke_share(
+    conversation_id: str,
+    share_id: str,
+    share_service: ConversationShareSvc,
+    current_user: CurrentUser,
+) -> None:
+    """Revoke a conversation share."""
+    await share_service.revoke_share(share_id, str(current_user.id))
+
+
+@router.get("/shared/{token}")
+async def get_shared_conversation(
+    token: str,
+    share_service: ConversationShareSvc,
+) -> Any:
+    """Access a shared conversation via public token (no auth required)."""
+    return await share_service.get_by_token(token)
+
+
+{%- endif %}
 {%- endif %}

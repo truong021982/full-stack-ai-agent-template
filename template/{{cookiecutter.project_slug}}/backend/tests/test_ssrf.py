@@ -14,9 +14,7 @@ from app.core.sanitize import (
 )
 
 
-# ---------------------------------------------------------------------------
 # _is_ip_blocked
-# ---------------------------------------------------------------------------
 
 
 class TestIsIpBlocked:
@@ -58,9 +56,7 @@ class TestIsIpBlocked:
         assert _is_ip_blocked("not-an-ip") is True
 
 
-# ---------------------------------------------------------------------------
 # validate_webhook_url — scheme validation
-# ---------------------------------------------------------------------------
 
 
 class TestSchemeValidation:
@@ -84,9 +80,7 @@ class TestSchemeValidation:
             validate_webhook_url("://example.com/hook")
 
 
-# ---------------------------------------------------------------------------
 # validate_webhook_url — IP-literal URLs
-# ---------------------------------------------------------------------------
 
 
 class TestDirectIpUrls:
@@ -114,9 +108,7 @@ class TestDirectIpUrls:
         assert validate_webhook_url(url) == url
 
 
-# ---------------------------------------------------------------------------
 # validate_webhook_url — DNS resolution to private IP
-# ---------------------------------------------------------------------------
 
 
 class TestDnsResolution:
@@ -147,9 +139,7 @@ class TestDnsResolution:
             assert result == "https://example.com/webhook"
 
 
-# ---------------------------------------------------------------------------
 # validate_webhook_url — edge cases
-# ---------------------------------------------------------------------------
 
 
 class TestEdgeCases:
@@ -191,9 +181,7 @@ class TestEdgeCases:
             assert result == "http://example.com/webhook"
 
 
-# ---------------------------------------------------------------------------
 # SSRFBlockedError is a subclass of ValueError
-# ---------------------------------------------------------------------------
 
 
 class TestSSRFBlockedError:

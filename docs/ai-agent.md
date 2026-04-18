@@ -4,23 +4,26 @@ This document describes the AI agent integrations available in the template.
 
 ## Overview
 
-The template supports multiple AI frameworks for building intelligent agents:
+The template supports 6 AI frameworks for building intelligent agents:
 
 | Framework | Description | Best For |
 |-----------|-------------|----------|
-| **PydanticAI** | Type-safe AI with Pydantic integration | Simple agents, type safety |
+| **PydanticAI** | Type-safe AI with Pydantic integration + WebSearch/WebFetch built-in | Simple agents, type safety, web-capable |
+| **PydanticDeep** | Deep agentic coding assistant with filesystem tools, Docker/Daytona sandbox | Code generation, file manipulation |
 | **LangChain** | Comprehensive AI tooling ecosystem | Complex chains, many integrations |
 | **LangGraph** | Graph-based ReAct agents | Multi-step reasoning, tool loops |
 | **CrewAI** | Multi-agent orchestration | Agent teams, complex workflows |
-| **RAG** | Document retrieval & knowledge base | Building AI assistants with context |
+| **DeepAgents** | Agentic framework with subagent delegation | Advanced multi-step tasks |
 
 Select your framework during project creation:
 
 ```bash
-fastapi-fullstack create my_project --ai-framework pydanticai  # default
+fastapi-fullstack create my_project --ai-framework pydantic_ai   # default
+fastapi-fullstack create my_project --ai-framework pydantic_deep
 fastapi-fullstack create my_project --ai-framework langchain
 fastapi-fullstack create my_project --ai-framework langgraph
 fastapi-fullstack create my_project --ai-framework crewai
+fastapi-fullstack create my_project --ai-framework deepagents
 ```
 
 ---

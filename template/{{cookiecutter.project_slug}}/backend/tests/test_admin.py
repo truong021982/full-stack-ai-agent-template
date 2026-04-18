@@ -195,9 +195,7 @@ class TestGetSortableColumns:
         assert isinstance(columns, list)
 
 
-# =============================================================================
 # Tests for get_form_excluded_columns
-# =============================================================================
 
 
 class TestGetFormExcludedColumns:
@@ -233,9 +231,7 @@ class TestGetFormExcludedColumns:
         assert "secret" in columns
 
 
-# =============================================================================
 # Tests for pluralize
-# =============================================================================
 
 
 class TestPluralize:
@@ -274,9 +270,7 @@ class TestPluralize:
         assert pluralize("Wish") == "Wishes"
 
 
-# =============================================================================
 # Tests for create_model_admin
-# =============================================================================
 
 
 class TestCreateModelAdmin:
@@ -400,9 +394,7 @@ class TestCreateModelAdmin:
         assert admin_class.can_view_details is False
 
 
-# =============================================================================
 # Tests for register_models_auto
-# =============================================================================
 
 
 class TestRegisterModelsAuto:
@@ -460,9 +452,7 @@ class TestRegisterModelsAuto:
             assert issubclass(admin_class, ModelView)
 
 
-# =============================================================================
 # Tests for get_sync_engine
-# =============================================================================
 
 
 class TestGetSyncEngine:
@@ -517,9 +507,7 @@ class TestGetSyncEngine:
         admin_module._sync_engine = None
 
 
-# =============================================================================
 # Tests for setup_admin
-# =============================================================================
 
 
 class TestSetupAdmin:
@@ -583,9 +571,7 @@ class TestSetupAdmin:
 {%- if cookiecutter.admin_require_auth %}
 
 
-# =============================================================================
 # Tests for AdminAuth
-# =============================================================================
 
 
 class TestAdminAuth:

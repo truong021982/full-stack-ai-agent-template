@@ -44,6 +44,9 @@ enable_rag_image_description = "{{ cookiecutter.enable_rag_image_description }}"
 enable_google_drive_ingestion = "{{ cookiecutter.enable_google_drive_ingestion }}" == "True"
 enable_s3_ingestion = "{{ cookiecutter.enable_s3_ingestion }}" == "True"
 enable_web_search = "{{ cookiecutter.enable_web_search }}" == "True"
+use_pydantic_deep = "{{ cookiecutter.use_pydantic_deep }}" == "True"
+use_telegram = "{{ cookiecutter.use_telegram }}" == "True"
+use_slack = "{{ cookiecutter.use_slack }}" == "True"
 
 
 def remove_file(path: str) -> None:
@@ -80,9 +83,7 @@ def remove_dir(path: str) -> None:
 # Base directories
 backend_app = os.path.join(os.getcwd(), "backend", "app")
 
-# ============================================================================
 # Cleanup stub files based on disabled features
-# ============================================================================
 print("Cleaning up unused files...")
 
 # --- AI Agent files (remove unused framework-specific files) ---
@@ -96,6 +97,8 @@ if not use_crewai:
     remove_file(os.path.join(backend_app, "agents", "crewai_assistant.py"))
 if not use_deepagents:
     remove_file(os.path.join(backend_app, "agents", "deepagents_assistant.py"))
+if not use_pydantic_deep:
+    remove_file(os.path.join(backend_app, "agents", "pydantic_deep_assistant.py"))
 if not enable_web_search:
     remove_file(os.path.join(backend_app, "agents", "tools", "web_search.py"))
 
