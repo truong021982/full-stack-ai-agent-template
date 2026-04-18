@@ -165,7 +165,13 @@ class ConversationCreate(ConversationBase):
     user_id: str | None = Field(default=None, description="Owner user ID")
 {%- endif %}
 {%- endif %}
-    pass
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+{%- if cookiecutter.use_postgresql %}
+    project_id: UUID | None = Field(default=None, description="Project this conversation belongs to")
+{%- else %}
+    project_id: str | None = Field(default=None, description="Project this conversation belongs to")
+{%- endif %}
+{%- endif %}
 
 
 class ConversationUpdate(BaseSchema):
@@ -183,10 +189,16 @@ class ConversationRead(ConversationBase, TimestampSchema):
 {%- if cookiecutter.use_jwt %}
     user_id: UUID | None = None
 {%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    project_id: UUID | None = None
+{%- endif %}
 {%- else %}
     id: str
 {%- if cookiecutter.use_jwt %}
     user_id: str | None = None
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
+    project_id: str | None = None
 {%- endif %}
 {%- endif %}
     is_archived: bool = False

@@ -319,6 +319,10 @@ class Settings(BaseSettings):
 {%- if cookiecutter.use_deepagents %}
 
     # === DeepAgents Configuration ===
+    # Backend type: "state" (in-memory, ephemeral per WebSocket connection)
+    DEEPAGENTS_BACKEND_TYPE: str = "{{ cookiecutter.sandbox_backend }}"
+    # Memory file paths (comma-separated AGENTS.md paths, e.g. "/memory/AGENTS.md")
+    DEEPAGENTS_MEMORY_PATHS: str | None = None
     # Skills paths (comma-separated, relative to backend dir)
     DEEPAGENTS_SKILLS_PATHS: str | None = None  # e.g. "/skills/user/,/skills/project/"
     # Enable built-in tools
@@ -331,6 +335,38 @@ class Settings(BaseSettings):
     DEEPAGENTS_INTERRUPT_TOOLS: str | None = None
     # Allowed decisions for interrupted tools: approve,edit,reject
     DEEPAGENTS_ALLOWED_DECISIONS: str = "approve,edit,reject"
+{%- endif %}
+{%- if cookiecutter.use_pydantic_deep %}
+
+    # === PydanticDeep Configuration ===
+    # Backend type: "state" (in-memory) or "daytona" (Daytona cloud workspace)
+    PYDANTIC_DEEP_BACKEND_TYPE: str = "{{ cookiecutter.sandbox_backend }}"
+    # Feature flags
+    PYDANTIC_DEEP_INCLUDE_SUBAGENTS: bool = True   # subagent delegation
+    PYDANTIC_DEEP_INCLUDE_SKILLS: bool = True       # SKILL.md discovery
+    PYDANTIC_DEEP_INCLUDE_PLAN: bool = True         # planner subagent
+    PYDANTIC_DEEP_INCLUDE_MEMORY: bool = True       # MEMORY.md persistence
+    PYDANTIC_DEEP_INCLUDE_EXECUTE: bool = False     # shell execution (security risk — off by default)
+    PYDANTIC_DEEP_WEB_SEARCH: bool = True           # built-in pydantic-ai web search
+{%- endif %}
+
+{%- if cookiecutter.use_telegram or cookiecutter.use_slack %}
+
+    # === Messaging Channels ===
+    # Fernet encryption key for bot tokens — generate with: openssl rand -hex 32
+    CHANNEL_ENCRYPTION_KEY: str = "change-me-generate-with-openssl-rand-hex-32"
+{%- if cookiecutter.use_telegram %}
+    # Telegram: webhook base URL (e.g. https://api.yourdomain.com) — leave empty to use polling
+    TELEGRAM_WEBHOOK_BASE_URL: str = ""
+{%- endif %}
+{%- if cookiecutter.use_slack %}
+    # Slack: signing secret for verifying webhook requests (from Slack app settings)
+    SLACK_SIGNING_SECRET: str = ""
+    # Slack: bot token (xoxb-...) — used for sending messages via Web API
+    SLACK_BOT_TOKEN: str = ""
+    # Slack: app-level token (xapp-...) — used for Socket Mode (dev/polling)
+    SLACK_APP_TOKEN: str = ""
+{%- endif %}
 {%- endif %}
 
 {%- if cookiecutter.enable_rag %}

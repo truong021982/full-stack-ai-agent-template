@@ -68,7 +68,7 @@ class TestAssistantAgent:
 
     @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"})
     @patch("app.agents.assistant.OpenAIProvider")
-    @patch("app.agents.assistant.OpenAIChatModel")
+    @patch("app.agents.assistant.OpenAIResponsesModel")
     def test_agent_property_creates_agent(self, mock_model, mock_provider):
         """Test agent property creates agent on first access."""
         agent = AssistantAgent()
@@ -78,7 +78,7 @@ class TestAssistantAgent:
 
     @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"})
     @patch("app.agents.assistant.OpenAIProvider")
-    @patch("app.agents.assistant.OpenAIChatModel")
+    @patch("app.agents.assistant.OpenAIResponsesModel")
     def test_agent_property_caches_agent(self, mock_model, mock_provider):
         """Test agent property caches the agent instance."""
         agent = AssistantAgent()
@@ -264,7 +264,7 @@ class TestHistoryConversion:
         ]
         messages = agent._convert_history(history)
         assert len(messages) == 3
-        from langchain.messages import AIMessage, HumanMessage, SystemMessage
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
         assert isinstance(messages[0], HumanMessage)
         assert isinstance(messages[1], AIMessage)
         assert isinstance(messages[2], SystemMessage)

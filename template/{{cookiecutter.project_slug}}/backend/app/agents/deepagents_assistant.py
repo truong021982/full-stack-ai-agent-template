@@ -12,12 +12,14 @@ Human-in-the-loop (HITL) support:
 - Allowed decisions: approve, edit, reject
 - Interrupts are returned via stream/run and can be resumed with decisions
 
+Backend types (DEEPAGENTS_BACKEND_TYPE):
+- "state"  — in-memory, ephemeral per WebSocket connection (default)
+
 Configuration via settings:
+- DEEPAGENTS_BACKEND_TYPE: Backend type (state)
+- DEEPAGENTS_MEMORY_PATHS: Comma-separated AGENTS.md memory file paths
 - DEEPAGENTS_SKILLS_PATHS: Comma-separated skill paths
-- DEEPAGENTS_ENABLE_FILESYSTEM: Enable file tools (default: True)
 - DEEPAGENTS_ENABLE_EXECUTE: Enable shell execution (default: False)
-- DEEPAGENTS_ENABLE_TODOS: Enable todo list tool (default: True)
-- DEEPAGENTS_ENABLE_SUBAGENTS: Enable subagent spawning (default: True)
 - DEEPAGENTS_INTERRUPT_TOOLS: Tools requiring human approval
 - DEEPAGENTS_ALLOWED_DECISIONS: Allowed decisions (approve,edit,reject)
 """
@@ -33,7 +35,7 @@ from langchain_core.tools import tool
 {%- endif %}
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.message import add_messages
-from langgraph.types import Command, interrupt
+from langgraph.types import Command
 {%- if cookiecutter.use_openai %}
 from langchain_openai import ChatOpenAI
 {%- endif %}
@@ -62,15 +64,16 @@ logger = logging.getLogger(__name__)
 
 {%- if cookiecutter.enable_rag %}
 @tool
-async def search_documents(query: str, collection: str = "documents", top_k: int = 5) -> str:
+async def search_documents(query: str, collection: str | None = None, top_k: int = 5) -> str:
     """Search the knowledge base for relevant documents.
 
     Use this tool to find information from uploaded documents before answering user queries.
+    Searches across all available collections automatically.
     Cite sources by referring to the document filename from the search results.
 
     Args:
         query: The search query string.
-        collection: Name of the collection to search (default: "documents").
+        collection: Name of the collection to search (default: all collections).
         top_k: Number of top results to retrieve (default: 5).
 
     Returns:
@@ -135,6 +138,19 @@ def _parse_skills_paths() -> list[str] | None:
     return paths if paths else None
 
 
+def _parse_memory_paths() -> list[str] | None:
+    """Parse memory (AGENTS.md) file paths from settings.
+
+    Returns:
+        List of memory file paths or None if not configured.
+    """
+    if not settings.DEEPAGENTS_MEMORY_PATHS:
+        return None
+
+    paths = [p.strip() for p in settings.DEEPAGENTS_MEMORY_PATHS.split(",") if p.strip()]
+    return paths if paths else None
+
+
 def _parse_interrupt_config() -> dict[str, bool | dict[str, list[str]]] | None:
     """Parse interrupt_on configuration from settings.
 
@@ -179,7 +195,7 @@ class DeepAgentsAssistant:
     DeepAgents creates a LangGraph-based agent with built-in tools for
     filesystem operations, task management, and code execution.
 
-    Uses StateBackend (in-memory) for file state management.
+    Backend: StateBackend (in-memory file state, no external deps).
     Skills can be configured via DEEPAGENTS_SKILLS_PATHS setting.
     Human-in-the-loop via DEEPAGENTS_INTERRUPT_TOOLS setting.
     """
@@ -190,7 +206,9 @@ class DeepAgentsAssistant:
         temperature: float | None = None,
         system_prompt: str | None = None,
         skills: list[str] | None = None,
+        memory: list[str] | None = None,
         interrupt_on: dict[str, bool | dict[str, list[str]]] | None = None,
+        conversation_id: str | None = None,
     ):
         """Initialize DeepAgentsAssistant.
 
@@ -199,7 +217,9 @@ class DeepAgentsAssistant:
             temperature: LLM temperature (default from settings.AI_TEMPERATURE)
             system_prompt: System prompt (default from DEFAULT_SYSTEM_PROMPT)
             skills: List of skill paths (default from settings.DEEPAGENTS_SKILLS_PATHS)
+            memory: List of AGENTS.md memory paths (default from settings.DEEPAGENTS_MEMORY_PATHS)
             interrupt_on: Dict of tool names to interrupt configs (default from settings)
+            conversation_id: Unique ID for the conversation.
         """
         self.model_name = model_name or settings.AI_MODEL
         self.temperature = temperature or settings.AI_TEMPERATURE
@@ -209,9 +229,19 @@ class DeepAgentsAssistant:
         self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
 {%- endif %}
         self.skills = skills if skills is not None else _parse_skills_paths()
+        self.memory = memory if memory is not None else _parse_memory_paths()
         self.interrupt_on = interrupt_on if interrupt_on is not None else _parse_interrupt_config()
+        self.conversation_id = conversation_id
         self._graph = None
         self._checkpointer = MemorySaver()
+
+    def _create_backend(self):
+        """Create the file-storage backend.
+
+        Returns:
+            BackendFactory (callable) for StateBackend (in-memory, ephemeral).
+        """
+        return lambda rt: StateBackend(rt)
 
     def _create_model(self):
         """Create the LLM model for DeepAgents."""
@@ -244,33 +274,38 @@ class DeepAgentsAssistant:
         """Get or create the compiled graph instance.
 
         The agent is created with:
-        - StateBackend: In-memory file state management
-        - TodoListMiddleware: For task tracking (if enabled)
-        - FilesystemMiddleware: For file operations (if enabled)
-        - SubAgentMiddleware: For spawning subagents (if enabled)
+        - Backend: StateBackend (in-memory)
+        - TodoListMiddleware: For task tracking
+        - FilesystemMiddleware: For file operations
+        - SubAgentMiddleware: For spawning subagents
+        - MemoryMiddleware: For AGENTS.md memory (if DEEPAGENTS_MEMORY_PATHS set)
         - Skills: Loaded from configured paths (if any)
         - interrupt_on: Human-in-the-loop config (if any)
         """
         if self._graph is None:
             model = self._create_model()
+            backend = self._create_backend()
 
-            # Create agent with StateBackend (in-memory)
             self._graph = create_deep_agent(
                 model=model,
                 system_prompt=self.system_prompt,
                 checkpointer=self._checkpointer,
-                backend=lambda rt: StateBackend(rt),
+                backend=backend,
                 skills=self.skills,
+                memory=self.memory,
                 interrupt_on=self.interrupt_on,
                 tools=DEEPAGENTS_CUSTOM_TOOLS,
             )
 
             logger.info(
-                f"DeepAgents initialized with model={self.model_name}, "
-                f"skills={self.skills}, "
-                f"interrupt_on={list(self.interrupt_on.keys()) if self.interrupt_on else None}, "
-                f"filesystem={settings.DEEPAGENTS_ENABLE_FILESYSTEM}, "
-                f"execute={settings.DEEPAGENTS_ENABLE_EXECUTE}"
+                "DeepAgents initialized: model=%s backend=%s skills=%s memory=%s "
+                "interrupt_on=%s execute=%s",
+                self.model_name,
+                settings.DEEPAGENTS_BACKEND_TYPE,
+                self.skills,
+                self.memory,
+                list(self.interrupt_on.keys()) if self.interrupt_on else None,
+                settings.DEEPAGENTS_ENABLE_EXECUTE,
             )
 
         return self._graph
@@ -480,14 +515,16 @@ class DeepAgentsAssistant:
             final_state = data if stream_mode == "updates" else final_state
             yield stream_mode, data
 
-        # Check for interrupt after stream completes
-        # Get the final state to check for interrupts
+        # Check for interrupt after stream completes by reading checkpoint state
         state = await self.graph.aget_state(config)
-        if state.next:  # If there's a next step, we're likely interrupted
-            # Fetch the actual interrupt data
-            result = await self.graph.ainvoke(input_data, config=config)
-            interrupt_data = self.extract_interrupt(result)
-            if interrupt_data:
+        if state.next and state.tasks:
+            interrupts = state.tasks[0].interrupts if state.tasks[0].interrupts else []
+            if interrupts:
+                interrupt_value = interrupts[0].value
+                interrupt_data = InterruptData(
+                    action_requests=interrupt_value.get("action_requests", []),
+                    review_configs=interrupt_value.get("review_configs", []),
+                )
                 yield "interrupt", interrupt_data
 
     async def stream_resume(
@@ -524,32 +561,42 @@ class DeepAgentsAssistant:
         ):
             yield stream_mode, data
 
-        # Check for another interrupt
+        # Check for another interrupt by reading checkpoint state
         state = await self.graph.aget_state(config)
-        if state.next:
-            result = await self.graph.ainvoke(
-                Command(resume={"decisions": decisions}),
-                config=config
-            )
-            interrupt_data = self.extract_interrupt(result)
-            if interrupt_data:
+        if state.next and state.tasks:
+            interrupts = state.tasks[0].interrupts if state.tasks[0].interrupts else []
+            if interrupts:
+                interrupt_value = interrupts[0].value
+                interrupt_data = InterruptData(
+                    action_requests=interrupt_value.get("action_requests", []),
+                    review_configs=interrupt_value.get("review_configs", []),
+                )
                 yield "interrupt", interrupt_data
 
 
 def get_agent(
     skills: list[str] | None = None,
+    memory: list[str] | None = None,
     interrupt_on: dict[str, bool | dict[str, list[str]]] | None = None,
+    conversation_id: str | None = None,
 ) -> DeepAgentsAssistant:
     """Factory function to create a DeepAgentsAssistant.
 
     Args:
         skills: Optional list of skill paths to override settings.
+        memory: Optional list of AGENTS.md memory paths to override settings.
         interrupt_on: Optional interrupt config to override settings.
+        conversation_id: Unique conversation ID for workspace/container scoping.
 
     Returns:
         Configured DeepAgentsAssistant instance.
     """
-    return DeepAgentsAssistant(skills=skills, interrupt_on=interrupt_on)
+    return DeepAgentsAssistant(
+        skills=skills,
+        memory=memory,
+        interrupt_on=interrupt_on,
+        conversation_id=conversation_id,
+    )
 
 
 async def run_agent(

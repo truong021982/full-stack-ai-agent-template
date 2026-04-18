@@ -66,7 +66,6 @@ def generated_project_full(tmp_path: Path) -> Path:
         enable_file_storage=True,
         enable_webhooks=True,
         enable_cors=True,
-        enable_orjson=True,
         enable_pytest=True,
         enable_precommit=True,
         enable_makefile=True,

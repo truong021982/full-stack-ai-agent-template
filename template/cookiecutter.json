@@ -64,6 +64,9 @@
   "use_langgraph": false,
   "use_crewai": false,
   "use_deepagents": false,
+  "use_pydantic_deep": false,
+  "sandbox_backend": "state",
+  "use_slack": false,
   "llm_provider": "openai",
   "use_openai": true,
   "use_anthropic": false,
@@ -78,7 +81,6 @@
   "websocket_auth_api_key": false,
   "websocket_auth_none": false,
   "enable_cors": true,
-  "enable_orjson": true,
   "enable_i18n": true,
   "include_example_crud": false,
   "enable_pytest": true,
@@ -127,5 +129,6 @@
   "use_python_parser": true,
   "enable_google_drive_ingestion": false,
   "enable_s3_ingestion": false,
-  "enable_rag_image_description": false
+  "enable_rag_image_description": false,
+  "use_telegram": false
 }

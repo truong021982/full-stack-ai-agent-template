@@ -1069,7 +1069,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1161,7 +1161,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1250,7 +1250,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1337,7 +1337,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1425,7 +1425,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1510,7 +1510,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1600,7 +1600,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1692,7 +1692,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -1787,7 +1787,7 @@ class TestRunInteractivePrompts:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,
@@ -2090,7 +2090,7 @@ class TestRunInteractivePromptsLangSmith:
             "enable_websockets": False,
             "enable_file_storage": False,
             "enable_cors": True,
-            "enable_orjson": True,
+
         }
         mock_dev_tools.return_value = {
             "enable_pytest": True,

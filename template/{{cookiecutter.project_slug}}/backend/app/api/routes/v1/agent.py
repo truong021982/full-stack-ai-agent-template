@@ -211,10 +211,12 @@ async def agent_websocket(
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
                         # Verify conversation exists and update title if empty
-                        conv = await conv_service.get_conversation(UUID(requested_conv_id))
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title))
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -250,10 +252,12 @@ async def agent_websocket(
                     requested_conv_id = data.get("conversation_id")
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
-                        conv = conv_service.get_conversation(requested_conv_id)
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -293,10 +297,12 @@ async def agent_websocket(
             requested_conv_id = data.get("conversation_id")
             if requested_conv_id:
                 current_conversation_id = requested_conv_id
-                conv = await conv_service.get_conversation(requested_conv_id)
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                 if not conv.title and user_message:
                     title = user_message[:50] if len(user_message) > 50 else user_message
-                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
             elif not current_conversation_id:
                 conv_data = ConversationCreate(
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -813,10 +819,12 @@ async def agent_websocket(
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
                         # Verify conversation exists and update title if empty
-                        conv = await conv_service.get_conversation(UUID(requested_conv_id))
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title))
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -852,10 +860,12 @@ async def agent_websocket(
                     requested_conv_id = data.get("conversation_id")
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
-                        conv = conv_service.get_conversation(requested_conv_id)
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -895,10 +905,12 @@ async def agent_websocket(
             requested_conv_id = data.get("conversation_id")
             if requested_conv_id:
                 current_conversation_id = requested_conv_id
-                conv = await conv_service.get_conversation(requested_conv_id)
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                 if not conv.title and user_message:
                     title = user_message[:50] if len(user_message) > 50 else user_message
-                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
             elif not current_conversation_id:
                 conv_data = ConversationCreate(
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -935,7 +947,7 @@ async def agent_websocket(
 
                 await manager.send_event(websocket, "model_request_start", {})
 
-                for stream_mode, data in assistant.agent.stream(
+                async for stream_mode, data in assistant.agent.astream(
                     {"messages": model_history},
                     stream_mode=["messages", "updates"],
                     config={"configurable": context} if context else None,
@@ -1304,10 +1316,12 @@ async def agent_websocket(
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
                         # Verify conversation exists and update title if empty
-                        conv = await conv_service.get_conversation(UUID(requested_conv_id))
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title))
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -1343,10 +1357,12 @@ async def agent_websocket(
                     requested_conv_id = data.get("conversation_id")
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
-                        conv = conv_service.get_conversation(requested_conv_id)
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -1386,10 +1402,12 @@ async def agent_websocket(
             requested_conv_id = data.get("conversation_id")
             if requested_conv_id:
                 current_conversation_id = requested_conv_id
-                conv = await conv_service.get_conversation(requested_conv_id)
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                 if not conv.title and user_message:
                     title = user_message[:50] if len(user_message) > 50 else user_message
-                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
             elif not current_conversation_id:
                 conv_data = ConversationCreate(
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -1779,10 +1797,12 @@ async def agent_websocket(
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
                         # Verify conversation exists and update title if empty
-                        conv = await conv_service.get_conversation(UUID(requested_conv_id))
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title))
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -1818,10 +1838,12 @@ async def agent_websocket(
                     requested_conv_id = data.get("conversation_id")
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
-                        conv = conv_service.get_conversation(requested_conv_id)
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -1861,10 +1883,12 @@ async def agent_websocket(
             requested_conv_id = data.get("conversation_id")
             if requested_conv_id:
                 current_conversation_id = requested_conv_id
-                conv = await conv_service.get_conversation(requested_conv_id)
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                 if not conv.title and user_message:
                     title = user_message[:50] if len(user_message) > 50 else user_message
-                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
             elif not current_conversation_id:
                 conv_data = ConversationCreate(
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -2111,6 +2135,9 @@ from uuid import UUID
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect{%- if cookiecutter.websocket_auth_jwt %}, Depends{%- endif %}{%- if cookiecutter.websocket_auth_api_key %}, Query{%- endif %}
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage, ToolMessage
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+from sqlalchemy import select
+{%- endif %}
 
 from app.agents.deepagents_assistant import AgentContext, Decision, InterruptData, get_agent
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -2411,10 +2438,12 @@ async def agent_websocket(
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
                         # Verify conversation exists and update title if empty
-                        conv = await conv_service.get_conversation(UUID(requested_conv_id))
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title))
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -2450,10 +2479,12 @@ async def agent_websocket(
                     requested_conv_id = raw_data.get("conversation_id")
                     if requested_conv_id:
                         current_conversation_id = requested_conv_id
-                        conv = conv_service.get_conversation(requested_conv_id)
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                         if not conv.title and user_message:
                             title = user_message[:50] if len(user_message) > 50 else user_message
-                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                     elif not current_conversation_id:
                         # Create new conversation
                         conv_data = ConversationCreate(
@@ -2493,10 +2524,12 @@ async def agent_websocket(
             requested_conv_id = raw_data.get("conversation_id")
             if requested_conv_id:
                 current_conversation_id = requested_conv_id
-                conv = await conv_service.get_conversation(requested_conv_id)
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
                 if not conv.title and user_message:
                     title = user_message[:50] if len(user_message) > 50 else user_message
-                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title))
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
             elif not current_conversation_id:
                 conv_data = ConversationCreate(
 {%- if cookiecutter.websocket_auth_jwt %}
@@ -2526,11 +2559,68 @@ async def agent_websocket(
                 tool_events: list[Any] = []
                 seen_tool_call_ids: set[str] = set()
 
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+
+                # Load attached files → include content in user message
+                agent_input = user_message
+
+                if file_ids:
+                    from app.db.models.chat_file import ChatFile as ChatFileModel
+                    from app.services.file_storage import get_file_storage
+
+                    storage = get_file_storage()
+                    file_refs: list[str] = []
+{%- if cookiecutter.use_postgresql %}
+                    async with get_db_context() as file_db:
+                        for fid in file_ids:
+                            try:
+                                result = await file_db.execute(
+                                    select(ChatFileModel).where(ChatFileModel.id == UUID(fid))
+                                )
+                                chat_file = result.scalar_one_or_none()
+                                if not chat_file:
+                                    continue
+                                if chat_file.parsed_content:
+                                    file_refs.append(
+                                        f"- {chat_file.filename}:\n```\n{chat_file.parsed_content}\n```"
+                                    )
+                                elif chat_file.file_type == "image":
+                                    file_refs.append(f"- {chat_file.filename} (image file)")
+                                else:
+                                    file_refs.append(f"- {chat_file.filename} (binary file)")
+                            except Exception as e:
+                                logger.warning(f"Failed to load file {fid}: {e}")
+{%- else %}
+                    with contextmanager(get_db_session)() as file_db:
+                        for fid in file_ids:
+                            try:
+                                result = file_db.execute(
+                                    select(ChatFileModel).where(ChatFileModel.id == fid)
+                                )
+                                chat_file = result.scalar_one_or_none()
+                                if not chat_file:
+                                    continue
+                                if chat_file.parsed_content:
+                                    file_refs.append(
+                                        f"- {chat_file.filename}:\n```\n{chat_file.parsed_content}\n```"
+                                    )
+                                elif chat_file.file_type == "image":
+                                    file_refs.append(f"- {chat_file.filename} (image file)")
+                                else:
+                                    file_refs.append(f"- {chat_file.filename} (binary file)")
+                            except Exception as e:
+                                logger.warning(f"Failed to load file {fid}: {e}")
+{%- endif %}
+
+                    if file_refs:
+                        agent_input = user_message + "\n\nAttached files:\n" + "\n".join(file_refs)
+{%- endif %}
+
                 await manager.send_event(websocket, "model_request_start", {})
 
                 # Use DeepAgents' stream() which wraps LangGraph's astream
                 async for stream_mode, stream_data in assistant.stream(
-                    user_message,
+                    agent_input,
                     history=conversation_history,
                     context=context,
                     thread_id=thread_id,
@@ -2717,6 +2807,860 @@ async def agent_websocket(
         pass  # Normal disconnect
     finally:
         manager.disconnect(websocket)
+{%- elif cookiecutter.use_pydantic_deep %}
+"""AI Agent WebSocket routes with streaming support (PydanticDeep)."""
+
+import logging
+from typing import Any
+{%- if cookiecutter.use_database %}
+from datetime import datetime, UTC
+{%- if cookiecutter.use_postgresql %}
+from uuid import UUID
+{%- endif %}
+{%- endif %}
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect{%- if cookiecutter.websocket_auth_jwt %}, Depends{%- endif %}{%- if cookiecutter.websocket_auth_api_key %}, Query{%- endif %}
+
+from pydantic_ai import (
+    Agent,
+    FinalResultEvent,
+    FunctionToolCallEvent,
+    FunctionToolResultEvent,
+    PartDeltaEvent,
+    PartStartEvent,
+    TextPartDelta,
+    ToolCallPartDelta,
+)
+from pydantic_ai.messages import TextPart
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+from sqlalchemy import select
+{%- endif %}
+
+from app.agents.pydantic_deep_assistant import PydanticDeepContext, get_agent
+{%- if cookiecutter.websocket_auth_jwt %}
+from app.api.deps import get_current_user_ws
+from app.db.models.user import User
+{%- endif %}
+{%- if cookiecutter.websocket_auth_api_key %}
+from app.core.config import settings
+{%- endif %}
+{%- if (cookiecutter.use_postgresql or cookiecutter.use_sqlite) %}
+from app.db.session import get_db_context{% if cookiecutter.use_sqlite %}, get_db_session
+from contextlib import contextmanager{% endif %}
+from app.api.deps import ConversationSvc, get_conversation_service
+from app.schemas.conversation import ConversationCreate, ConversationUpdate, MessageCreate, ToolCallCreate, ToolCallComplete
+{%- elif cookiecutter.use_mongodb %}
+from app.api.deps import ConversationSvc, get_conversation_service
+from app.schemas.conversation import ConversationCreate, ConversationUpdate, MessageCreate, ToolCallCreate, ToolCallComplete
+{%- endif %}
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+@router.get("/agent/models")
+async def list_models() -> dict[str, Any]:
+    """Return available LLM models and the current default."""
+    from app.core.config import settings
+    return {
+        "default": settings.AI_MODEL,
+        "models": settings.AI_AVAILABLE_MODELS,
+    }
+
+
+class AgentConnectionManager:
+    """WebSocket connection manager for AI agent."""
+
+    def __init__(self) -> None:
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket) -> None:
+        """Accept and store a new WebSocket connection."""
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"Agent WebSocket connected. Total connections: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket) -> None:
+        """Remove a WebSocket connection."""
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        logger.info(f"Agent WebSocket disconnected. Total connections: {len(self.active_connections)}")
+
+    async def send_event(self, websocket: WebSocket, event_type: str, data: Any) -> bool:
+        """Send a JSON event to a specific WebSocket client.
+
+        Returns True if sent successfully, False if connection is closed.
+        """
+        try:
+            await websocket.send_json({"type": event_type, "data": data})
+            return True
+        except (WebSocketDisconnect, RuntimeError):
+            return False
+
+
+manager = AgentConnectionManager()
+
+{%- if cookiecutter.websocket_auth_api_key %}
+
+
+async def verify_api_key(api_key: str) -> bool:
+    """Verify the API key for WebSocket authentication."""
+    return api_key == settings.API_KEY
+{%- endif %}
+
+
+@router.websocket("/ws/agent")
+async def agent_websocket(
+    websocket: WebSocket,
+{%- if cookiecutter.websocket_auth_jwt %}
+    user: User = Depends(get_current_user_ws),
+{%- elif cookiecutter.websocket_auth_api_key %}
+    api_key: str = Query(..., alias="api_key"),
+{%- endif %}
+) -> None:
+    """WebSocket endpoint for PydanticDeep agent with full event streaming.
+
+    PydanticDeep manages conversation history internally via the backend
+    (history_messages_path). Unlike other frameworks, there is no need to
+    pass message history — just send the next user message.
+
+    Streamed events:
+    - user_prompt: User input received
+    - model_request_start: LLM request begins
+    - text_delta: Streaming text tokens
+    - tool_call_delta: Streaming tool arguments
+    - tool_call: Tool invocation (name + args)
+    - tool_result: Tool output
+    - final_result: Complete response
+    - complete: Processing finished
+    - error: An error occurred
+
+    Expected input message format:
+    {
+        "message": "user message here"{% if cookiecutter.use_database %},
+        "conversation_id": "optional-uuid-to-continue-existing-conversation"{% endif %}
+    }
+{%- if cookiecutter.websocket_auth_jwt %}
+
+    Authentication: Requires a valid JWT token passed as a query parameter or header.
+{%- elif cookiecutter.websocket_auth_api_key %}
+
+    Authentication: Requires a valid API key passed as 'api_key' query parameter.
+    Example: ws://localhost:{{ cookiecutter.backend_port }}/api/v1/ws/agent?api_key=your-api-key
+{%- endif %}
+{%- if cookiecutter.use_database %}
+
+    Persistence: Set 'conversation_id' to continue an existing conversation.
+    If not provided, a new conversation is created and its ID is returned in
+    the 'conversation_created' event.
+{%- endif %}
+    """
+{%- if cookiecutter.websocket_auth_api_key %}
+    if not await verify_api_key(api_key):
+        await websocket.close(code=4001, reason="Invalid API key")
+        return
+{%- endif %}
+
+    await manager.connect(websocket)
+
+    # Context per connection
+    context: PydanticDeepContext = {}
+{%- if cookiecutter.websocket_auth_jwt %}
+    context["user_id"] = str(user.id) if user else None
+    context["user_name"] = user.email if user else None
+{%- endif %}
+{%- if cookiecutter.use_database %}
+    current_conversation_id: str | None = None
+{%- endif %}
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user_message = data.get("message", "")
+            file_ids = data.get("file_ids", [])
+
+            if not user_message and not file_ids:
+                await manager.send_event(websocket, "error", {"message": "Empty message"})
+                continue
+
+{%- if (cookiecutter.use_postgresql or cookiecutter.use_sqlite) %}
+
+            # Handle conversation persistence
+            try:
+{%- if cookiecutter.use_postgresql %}
+                async with get_db_context() as db:
+                    conv_service = get_conversation_service(db)
+
+                    requested_conv_id = data.get("conversation_id")
+                    if requested_conv_id:
+                        current_conversation_id = requested_conv_id
+                        conv = await conv_service.get_conversation(UUID(requested_conv_id)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
+                        if not conv.title and user_message:
+                            title = user_message[:50] if len(user_message) > 50 else user_message
+                            await conv_service.update_conversation(UUID(requested_conv_id), ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
+                    elif not current_conversation_id:
+                        conv_data = ConversationCreate(
+{%- if cookiecutter.websocket_auth_jwt %}
+                            user_id=user.id,
+{%- endif %}
+                            title=user_message[:50] if len(user_message) > 50 else user_message,
+                        )
+                        conversation = await conv_service.create_conversation(conv_data)
+                        current_conversation_id = str(conversation.id)
+                        await manager.send_event(
+                            websocket,
+                            "conversation_created",
+                            {"conversation_id": current_conversation_id},
+                        )
+
+                    user_msg = await conv_service.add_message(
+                        UUID(current_conversation_id),
+                        MessageCreate(role="user", content=user_message),
+                    )
+                    if file_ids:
+                        try:
+                            await conv_service.link_files_to_message(user_msg.id, file_ids)
+                        except Exception as e:
+                            logger.warning(f"Failed to link files: {e}")
+{%- else %}
+                with contextmanager(get_db_session)() as db:
+                    conv_service = get_conversation_service(db)
+
+                    requested_conv_id = data.get("conversation_id")
+                    if requested_conv_id:
+                        current_conversation_id = requested_conv_id
+                        conv = conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
+                        if not conv.title and user_message:
+                            title = user_message[:50] if len(user_message) > 50 else user_message
+                            conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
+                    elif not current_conversation_id:
+                        conv_data = ConversationCreate(
+{%- if cookiecutter.websocket_auth_jwt %}
+                            user_id=str(user.id),
+{%- endif %}
+                            title=user_message[:50] if len(user_message) > 50 else user_message,
+                        )
+                        conversation = conv_service.create_conversation(conv_data)
+                        current_conversation_id = str(conversation.id)
+                        await manager.send_event(
+                            websocket,
+                            "conversation_created",
+                            {"conversation_id": current_conversation_id},
+                        )
+
+                    user_msg = conv_service.add_message(
+                        current_conversation_id,
+                        MessageCreate(role="user", content=user_message),
+                    )
+                    if file_ids:
+                        try:
+                            conv_service.link_files_to_message(user_msg.id, file_ids)
+                        except Exception as e:
+                            logger.warning(f"Failed to link files: {e}")
+{%- endif %}
+            except Exception as e:
+                logger.warning(f"Failed to persist conversation: {e}")
+{%- elif cookiecutter.use_mongodb %}
+
+            conv_service = get_conversation_service()
+
+            requested_conv_id = data.get("conversation_id")
+            if requested_conv_id:
+                current_conversation_id = requested_conv_id
+                conv = await conv_service.get_conversation(requested_conv_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
+                if not conv.title and user_message:
+                    title = user_message[:50] if len(user_message) > 50 else user_message
+                    await conv_service.update_conversation(requested_conv_id, ConversationUpdate(title=title)
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=str(user.id){%- endif %})
+            elif not current_conversation_id:
+                conv_data = ConversationCreate(
+{%- if cookiecutter.websocket_auth_jwt %}
+                    user_id=str(user.id),
+{%- endif %}
+                    title=user_message[:50] if len(user_message) > 50 else user_message,
+                )
+                conversation = await conv_service.create_conversation(conv_data)
+                current_conversation_id = str(conversation.id)
+                await manager.send_event(
+                    websocket,
+                    "conversation_created",
+                    {"conversation_id": current_conversation_id},
+                )
+
+            await conv_service.add_message(
+                current_conversation_id,
+                MessageCreate(role="user", content=user_message),
+            )
+{%- endif %}
+
+            await manager.send_event(websocket, "user_prompt", {"content": user_message})
+
+            try:
+                selected_model = data.get("model")
+                # PydanticDeep assistant scoped to this conversation.
+                # History is managed internally — no message_history parameter needed.
+                assistant = get_agent(
+                    model_name=selected_model,
+{%- if cookiecutter.use_database %}
+                    conversation_id=current_conversation_id or "default",
+{%- else %}
+                    conversation_id="default",
+{%- endif %}
+{%- if cookiecutter.websocket_auth_jwt %}
+                    user_id=context.get("user_id"),
+                    user_name=context.get("user_name"),
+{%- endif %}
+                )
+
+{%- if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}
+
+                # Load attached files → write to workspace + augment input
+                from pydantic_ai.messages import BinaryContent
+                from app.db.models.chat_file import ChatFile as ChatFileModel
+                from app.services.file_storage import get_file_storage
+
+                user_input: str | list[Any] = user_message
+                file_refs: list[str] = []
+                image_parts: list[Any] = []
+
+                if file_ids:
+                    storage = get_file_storage()
+                    # Sandbox backends (Docker/Daytona) expose container_name or
+                    # upload_bytes; StateBackend has neither.
+                    _bk = assistant.deps.backend
+                    has_sandbox = (
+                        hasattr(_bk, "container_name")
+                        or hasattr(_bk, "upload_bytes")
+                        or hasattr(_bk, "workspace_id")
+                    )
+{%- if cookiecutter.use_postgresql %}
+                    async with get_db_context() as file_db:
+                        for fid in file_ids:
+                            try:
+                                result = await file_db.execute(
+                                    select(ChatFileModel).where(ChatFileModel.id == UUID(fid))
+                                )
+                                chat_file = result.scalar_one_or_none()
+                                if not chat_file:
+                                    continue
+
+                                rel_path = f"uploads/{chat_file.filename}"
+
+                                if chat_file.file_type == "image":
+                                    file_data = await storage.load(chat_file.storage_path)
+                                    image_parts.append(
+                                        BinaryContent(data=file_data, media_type=chat_file.mime_type)
+                                    )
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, file_data)
+                                        file_refs.append(f"- {rel_path} (image, also attached inline for vision)")
+                                    else:
+                                        file_refs.append(f"- {chat_file.filename} (image attached inline)")
+                                elif chat_file.parsed_content:
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, chat_file.parsed_content)
+                                        file_refs.append(f"- {rel_path}")
+                                    else:
+                                        file_refs.append(
+                                            f"- {chat_file.filename}:\n```\n{chat_file.parsed_content}\n```"
+                                        )
+                                else:
+                                    file_data = await storage.load(chat_file.storage_path)
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, file_data)
+                                        file_refs.append(f"- {rel_path}")
+                                    else:
+                                        file_refs.append(f"- {chat_file.filename} (binary, not readable as text)")
+                            except Exception as e:
+                                logger.warning(f"Failed to load file {fid}: {e}")
+{%- else %}
+                    with contextmanager(get_db_session)() as file_db:
+                        for fid in file_ids:
+                            try:
+                                result = file_db.execute(
+                                    select(ChatFileModel).where(ChatFileModel.id == fid)
+                                )
+                                chat_file = result.scalar_one_or_none()
+                                if not chat_file:
+                                    continue
+
+                                rel_path = f"uploads/{chat_file.filename}"
+
+                                if chat_file.file_type == "image":
+                                    file_data = await storage.load(chat_file.storage_path)
+                                    image_parts.append(
+                                        BinaryContent(data=file_data, media_type=chat_file.mime_type)
+                                    )
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, file_data)
+                                        file_refs.append(f"- {rel_path} (image, also attached inline for vision)")
+                                    else:
+                                        file_refs.append(f"- {chat_file.filename} (image attached inline)")
+                                elif chat_file.parsed_content:
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, chat_file.parsed_content)
+                                        file_refs.append(f"- {rel_path}")
+                                    else:
+                                        file_refs.append(
+                                            f"- {chat_file.filename}:\n```\n{chat_file.parsed_content}\n```"
+                                        )
+                                else:
+                                    file_data = await storage.load(chat_file.storage_path)
+                                    if has_sandbox:
+                                        await assistant.write_file_to_workspace(rel_path, file_data)
+                                        file_refs.append(f"- {rel_path}")
+                                    else:
+                                        file_refs.append(f"- {chat_file.filename} (binary, not readable as text)")
+                            except Exception as e:
+                                logger.warning(f"Failed to load file {fid}: {e}")
+{%- endif %}
+
+                    if file_refs:
+                        if has_sandbox:
+                            header = "\n\nFiles uploaded to your sandbox workspace (use read_file to access):\n"
+                        else:
+                            header = "\n\nAttached files:\n"
+                        augmented = user_message + header + "\n".join(file_refs)
+                    else:
+                        augmented = user_message
+
+                    if image_parts:
+                        user_input = [augmented, *image_parts]
+                    else:
+                        user_input = augmented
+{%- endif %}
+
+                collected_tool_calls: list[dict[str, Any]] = []
+
+                # Stream all agent events via pydantic-ai's iter() API.
+                # PydanticDeep uses the same streaming interface as PydanticAI.
+                async with assistant.agent.iter(
+                    user_input,
+                    deps=assistant.deps,
+                ) as agent_run:
+                    async for node in agent_run:
+                        if Agent.is_user_prompt_node(node):
+                            prompt_text = (
+                                node.user_prompt if isinstance(node.user_prompt, str) else user_message
+                            )
+                            await manager.send_event(
+                                websocket,
+                                "user_prompt_processed",
+                                {"prompt": prompt_text},
+                            )
+
+                        elif Agent.is_model_request_node(node):
+                            await manager.send_event(websocket, "model_request_start", {})
+
+                            async with node.stream(agent_run.ctx) as request_stream:
+                                async for event in request_stream:
+                                    if isinstance(event, PartStartEvent):
+                                        await manager.send_event(
+                                            websocket,
+                                            "part_start",
+                                            {
+                                                "index": event.index,
+                                                "part_type": type(event.part).__name__,
+                                            },
+                                        )
+                                        if isinstance(event.part, TextPart) and event.part.content:
+                                            await manager.send_event(
+                                                websocket,
+                                                "text_delta",
+                                                {
+                                                    "index": event.index,
+                                                    "content": event.part.content,
+                                                },
+                                            )
+
+                                    elif isinstance(event, PartDeltaEvent):
+                                        if isinstance(event.delta, TextPartDelta):
+                                            await manager.send_event(
+                                                websocket,
+                                                "text_delta",
+                                                {
+                                                    "index": event.index,
+                                                    "content": event.delta.content_delta,
+                                                },
+                                            )
+                                        elif isinstance(event.delta, ToolCallPartDelta):
+                                            await manager.send_event(
+                                                websocket,
+                                                "tool_call_delta",
+                                                {
+                                                    "index": event.index,
+                                                    "args_delta": event.delta.args_delta,
+                                                },
+                                            )
+
+                                    elif isinstance(event, FinalResultEvent):
+                                        await manager.send_event(
+                                            websocket,
+                                            "final_result_start",
+                                            {"tool_name": event.tool_name},
+                                        )
+
+                        elif Agent.is_call_tools_node(node):
+                            await manager.send_event(websocket, "call_tools_start", {})
+
+                            async with node.stream(agent_run.ctx) as handle_stream:
+                                async for tool_event in handle_stream:
+                                    if isinstance(tool_event, FunctionToolCallEvent):
+                                        collected_tool_calls.append({
+                                            "tool_call_id": tool_event.part.tool_call_id,
+                                            "tool_name": tool_event.part.tool_name,
+                                            "args": tool_event.part.args,
+                                        })
+                                        await manager.send_event(
+                                            websocket,
+                                            "tool_call",
+                                            {
+                                                "tool_name": tool_event.part.tool_name,
+                                                "args": tool_event.part.args,
+                                                "tool_call_id": tool_event.part.tool_call_id,
+                                            },
+                                        )
+
+                                    elif isinstance(tool_event, FunctionToolResultEvent):
+                                        for tc in collected_tool_calls:
+                                            if tc["tool_call_id"] == tool_event.tool_call_id:
+                                                tc["result"] = str(tool_event.result.content)
+                                                break
+                                        await manager.send_event(
+                                            websocket,
+                                            "tool_result",
+                                            {
+                                                "tool_call_id": tool_event.tool_call_id,
+                                                "content": str(tool_event.result.content),
+                                            },
+                                        )
+
+                        elif Agent.is_end_node(node) and agent_run.result is not None:
+                            await manager.send_event(
+                                websocket,
+                                "final_result",
+                                {"output": agent_run.result.output},
+                            )
+
+{%- if (cookiecutter.use_postgresql or cookiecutter.use_sqlite) %}
+
+                # Save assistant response to database
+                if current_conversation_id and agent_run.result:
+                    try:
+{%- if cookiecutter.use_postgresql %}
+                        async with get_db_context() as db:
+                            conv_service = get_conversation_service(db)
+                            assistant_msg = await conv_service.add_message(
+                                UUID(current_conversation_id),
+                                MessageCreate(
+                                    role="assistant",
+                                    content=agent_run.result.output,
+                                    model_name=assistant.model_name if hasattr(assistant, "model_name") else None,
+                                ),
+                            )
+                            import json
+                            for tc in collected_tool_calls:
+                                try:
+                                    args_dict = tc.get("args", {})
+                                    if isinstance(args_dict, str):
+                                        args_dict = json.loads(args_dict) if args_dict.strip() else {}
+                                    if args_dict is None:
+                                        args_dict = {}
+                                    tc_obj = await conv_service.start_tool_call(
+                                        assistant_msg.id,
+                                        ToolCallCreate(
+                                            tool_call_id=tc["tool_call_id"],
+                                            tool_name=tc["tool_name"],
+                                            args=args_dict,
+                                            started_at=datetime.now(UTC),
+                                        ),
+                                    )
+                                    if tc.get("result"):
+                                        await conv_service.complete_tool_call(
+                                            tc_obj.id,
+                                            ToolCallComplete(
+                                                result=tc["result"],
+                                                completed_at=datetime.now(UTC),
+                                                success=True,
+                                            ),
+                                        )
+                                except Exception as e:
+                                    logger.warning(f"Failed to persist tool call: {e}")
+{%- else %}
+                        with contextmanager(get_db_session)() as db:
+                            conv_service = get_conversation_service(db)
+                            assistant_msg = conv_service.add_message(
+                                current_conversation_id,
+                                MessageCreate(
+                                    role="assistant",
+                                    content=agent_run.result.output,
+                                    model_name=assistant.model_name if hasattr(assistant, "model_name") else None,
+                                ),
+                            )
+                            import json
+                            for tc in collected_tool_calls:
+                                try:
+                                    args_dict = tc.get("args", {})
+                                    if isinstance(args_dict, str):
+                                        args_dict = json.loads(args_dict) if args_dict.strip() else {}
+                                    if args_dict is None:
+                                        args_dict = {}
+                                    tc_obj = conv_service.start_tool_call(
+                                        assistant_msg.id,
+                                        ToolCallCreate(
+                                            tool_call_id=tc["tool_call_id"],
+                                            tool_name=tc["tool_name"],
+                                            args=args_dict,
+                                            started_at=datetime.now(UTC),
+                                        ),
+                                    )
+                                    if tc.get("result"):
+                                        conv_service.complete_tool_call(
+                                            tc_obj.id,
+                                            ToolCallComplete(
+                                                result=tc["result"],
+                                                completed_at=datetime.now(UTC),
+                                                success=True,
+                                            ),
+                                        )
+                                except Exception as e:
+                                    logger.warning(f"Failed to persist tool call: {e}")
+{%- endif %}
+                    except Exception as e:
+                        logger.warning(f"Failed to persist assistant response: {e}")
+{%- elif cookiecutter.use_mongodb %}
+
+                if current_conversation_id and agent_run.result:
+                    try:
+                        await conv_service.add_message(
+                            current_conversation_id,
+                            MessageCreate(
+                                role="assistant",
+                                content=agent_run.result.output,
+                                model_name=assistant.model_name if hasattr(assistant, "model_name") else None,
+                            ),
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to persist assistant response: {e}")
+{%- endif %}
+
+                await manager.send_event(websocket, "complete", {
+{%- if cookiecutter.use_database %}
+                    "conversation_id": current_conversation_id,
+{%- endif %}
+                })
+
+            except WebSocketDisconnect:
+                logger.info("Client disconnected during agent processing")
+                break
+            except Exception as e:
+                logger.exception(f"Error processing agent request: {e}")
+                await manager.send_event(websocket, "error", {"message": str(e)})
+
+    except WebSocketDisconnect:
+        pass  # Normal disconnect
+    finally:
+        manager.disconnect(websocket)
+
+{%- if cookiecutter.use_jwt and cookiecutter.use_postgresql %}
+
+
+@router.websocket("/ws/projects/{project_id}/chats/{conversation_id}")
+async def project_chat_websocket(
+    project_id: UUID,
+    conversation_id: UUID,
+    websocket: WebSocket,
+{%- if cookiecutter.websocket_auth_jwt %}
+    user: User = Depends(get_current_user_ws),
+{%- elif cookiecutter.websocket_auth_api_key %}
+    api_key: str = Query(..., alias="api_key"),
+{%- endif %}
+) -> None:
+    """WebSocket endpoint for project-scoped PydanticDeep chat.
+
+    One Docker container per project is shared across all chats.
+    Chat history is stored per-chat inside the project volume at:
+      .pydantic-deep/sessions/{conversation_id}/messages.json
+
+    Expected input message format:
+    {
+        "message": "user message here"
+    }
+
+    Authentication: Requires a valid JWT token passed as a query parameter or header.
+    """
+{%- if cookiecutter.websocket_auth_api_key %}
+    if not await verify_api_key(api_key):
+        await websocket.close(code=4001, reason="Invalid API key")
+        return
+{%- endif %}
+
+    await manager.connect(websocket)
+
+    context: PydanticDeepContext = {}
+{%- if cookiecutter.websocket_auth_jwt %}
+    context["user_id"] = str(user.id) if user else None
+    context["user_name"] = user.email if user else None
+{%- endif %}
+
+    try:
+        # Verify project access and load project config
+        from app.db.session import get_db_context
+        from app.api.deps import get_project_service
+
+        async with get_db_context() as db:
+            project_service = get_project_service(db)
+            try:
+{%- if cookiecutter.websocket_auth_jwt %}
+                project = await project_service.get(project_id, user_id=user.id)
+{%- else %}
+                project = await project_service.get(project_id)
+{%- endif %}
+            except Exception as exc:
+                await websocket.close(code=4003, reason=str(exc))
+                return
+
+        # Build agent backend for this project
+        from pydantic_ai_backends import StateBackend
+
+        backend: Any = StateBackend()
+
+        assistant = get_agent(
+            conversation_id=str(conversation_id),
+            backend_override=backend,
+            history_messages_path=f".pydantic-deep/sessions/{conversation_id}/messages.json",
+        )
+
+        # Ensure the conversation record exists and is linked to the project
+        async with get_db_context() as db:
+            from app.api.deps import get_conversation_service
+            from app.schemas.conversation import ConversationCreate
+
+            conv_service = get_conversation_service(db)
+            try:
+                conv = await conv_service.get_conversation(conversation_id
+{%- if cookiecutter.websocket_auth_jwt %}, user_id=user.id{%- endif %})
+            except Exception:
+                conv = await conv_service.create_conversation(
+                    ConversationCreate(
+{%- if cookiecutter.websocket_auth_jwt %}
+                        user_id=user.id,
+{%- endif %}
+                        project_id=project_id,
+                    )
+                )
+                await manager.send_event(
+                    websocket,
+                    "conversation_created",
+                    {"conversation_id": str(conv.id), "project_id": str(project_id)},
+                )
+
+        while True:
+            data = await websocket.receive_json()
+            user_message = data.get("message", "")
+
+            if not user_message:
+                await manager.send_event(websocket, "error", {"message": "Empty message"})
+                continue
+
+            await manager.send_event(websocket, "user_prompt", {"content": user_message})
+
+            # Persist user message
+            async with get_db_context() as db:
+                from app.api.deps import get_conversation_service
+                from app.schemas.conversation import MessageCreate
+
+                conv_service = get_conversation_service(db)
+                try:
+                    await conv_service.add_message(
+                        conversation_id,
+                        MessageCreate(role="user", content=user_message),
+                    )
+                except Exception as exc:
+                    logger.warning("Failed to persist user message: %s", exc)
+
+            try:
+                await manager.send_event(websocket, "model_request_start", {})
+
+                async with assistant.agent.run_stream(
+                    user_message,
+                    deps=assistant.deps,
+                ) as stream:
+                    async for event in stream.stream_events():
+                        if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+                            await manager.send_event(
+                                websocket,
+                                "text_delta",
+                                {"delta": event.delta.content_delta},
+                            )
+                        elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
+                            pass  # stream started
+                        elif isinstance(event, FunctionToolCallEvent):
+                            await manager.send_event(
+                                websocket,
+                                "tool_call",
+                                {"tool_name": event.part.tool_name, "args": str(event.part.args)},
+                            )
+                        elif isinstance(event, FunctionToolResultEvent):
+                            await manager.send_event(
+                                websocket,
+                                "tool_result",
+                                {"tool_name": event.result.tool_name, "content": str(event.result.content)},
+                            )
+                        elif isinstance(event, FinalResultEvent):
+                            await manager.send_event(
+                                websocket,
+                                "final_result",
+                                {"content": str(event.output)},
+                            )
+
+                    result = stream.result()
+
+                # Persist assistant response
+                async with get_db_context() as db:
+                    from app.api.deps import get_conversation_service
+                    from app.schemas.conversation import MessageCreate
+
+                    conv_service = get_conversation_service(db)
+                    try:
+                        await conv_service.add_message(
+                            conversation_id,
+                            MessageCreate(
+                                role="assistant",
+                                content=result.output if hasattr(result, "output") else "",
+                                model_name=assistant.model_name if hasattr(assistant, "model_name") else None,
+                            ),
+                        )
+                    except Exception as exc:
+                        logger.warning("Failed to persist assistant response: %s", exc)
+
+                await manager.send_event(
+                    websocket,
+                    "complete",
+                    {
+                        "conversation_id": str(conversation_id),
+                        "project_id": str(project_id),
+                    },
+                )
+
+            except WebSocketDisconnect:
+                logger.info("Client disconnected during project chat")
+                break
+            except Exception as exc:
+                logger.exception("Error in project chat: %s", exc)
+                await manager.send_event(websocket, "error", {"message": str(exc)})
+
+    except WebSocketDisconnect:
+        pass
+    finally:
+        manager.disconnect(websocket)
+{%- endif %}
 {%- else %}
 """AI Agent routes - not configured."""
 {%- endif %}

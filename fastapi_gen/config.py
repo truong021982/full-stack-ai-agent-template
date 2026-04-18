@@ -76,6 +76,7 @@ class AIFrameworkType(StrEnum):
     LANGGRAPH = "langgraph"
     CREWAI = "crewai"
     DEEPAGENTS = "deepagents"
+    PYDANTIC_DEEP = "pydantic_deep"
 
 
 class LLMProviderType(StrEnum):
@@ -214,7 +215,7 @@ class ProjectConfig(BaseModel):
 
     # Authentication (always JWT + API Key)
     oauth_provider: OAuthProvider = OAuthProvider.NONE
-    enable_session_management: bool = True
+    enable_session_management: bool = False
 
     # Observability
     enable_logfire: bool = True
@@ -234,15 +235,17 @@ class ProjectConfig(BaseModel):
     enable_sentry: bool = False
     enable_prometheus: bool = False
     enable_admin_panel: bool = False
-    enable_websockets: bool = True
+    enable_websockets: bool = False
     enable_file_storage: bool = False
     ai_framework: AIFrameworkType = AIFrameworkType.PYDANTIC_AI
     llm_provider: LLMProviderType = LLMProviderType.OPENAI
+    sandbox_backend: str = "state"  # "state" or "daytona" (for DeepAgents/PydanticDeep)
     enable_webhooks: bool = False
     enable_langsmith: bool = False
     enable_web_search: bool = False
+    use_telegram: bool = False
+    use_slack: bool = False
     enable_cors: bool = True
-    enable_orjson: bool = True
 
     # Dev tools
     enable_pytest: bool = True
@@ -258,7 +261,7 @@ class ProjectConfig(BaseModel):
     python_version: str = "3.12"
 
     # Frontend
-    frontend: FrontendType = FrontendType.NEXTJS
+    frontend: FrontendType = FrontendType.NONE
     frontend_port: int = 3000
     brand_color: BrandColorType = BrandColorType.BLUE
 
@@ -308,9 +311,11 @@ class ProjectConfig(BaseModel):
             raise ValueError("Caching requires Redis to be enabled")
         if self.llm_provider == LLMProviderType.OPENROUTER and self.ai_framework not in (
             AIFrameworkType.PYDANTIC_AI,
+            AIFrameworkType.PYDANTIC_DEEP,
         ):
             raise ValueError(
-                f"OpenRouter is only supported with PydanticAI, not {self.ai_framework.value}"
+                f"OpenRouter is only supported with PydanticAI or PydanticDeep, "
+                f"not {self.ai_framework.value}"
             )
         if (
             self.enable_rate_limiting
@@ -333,7 +338,10 @@ class ProjectConfig(BaseModel):
             AIFrameworkType.LANGGRAPH,
             AIFrameworkType.DEEPAGENTS,
         ):
-            raise ValueError("LangSmith requires LangChain, LangGraph, or DeepAgents framework")
+            raise ValueError(
+                "LangSmith requires LangChain, LangGraph, or DeepAgents framework. "
+                "PydanticDeep uses Logfire for observability."
+            )
 
         # Admin panel requires SQLAlchemy (SQLAdmin doesn't fully support SQLModel)
         if self.enable_admin_panel and self.orm_type == OrmType.SQLMODEL:
@@ -458,6 +466,8 @@ class ProjectConfig(BaseModel):
             "use_langgraph": self.ai_framework == AIFrameworkType.LANGGRAPH,
             "use_crewai": self.ai_framework == AIFrameworkType.CREWAI,
             "use_deepagents": self.ai_framework == AIFrameworkType.DEEPAGENTS,
+            "use_pydantic_deep": self.ai_framework == AIFrameworkType.PYDANTIC_DEEP,
+            "sandbox_backend": self.sandbox_backend,
             "llm_provider": self.llm_provider.value,
             "use_openai": self.llm_provider == LLMProviderType.OPENAI,
             "use_anthropic": self.llm_provider == LLMProviderType.ANTHROPIC,
@@ -474,7 +484,6 @@ class ProjectConfig(BaseModel):
             "websocket_auth_api_key": False,
             "websocket_auth_none": False,
             "enable_cors": self.enable_cors,
-            "enable_orjson": self.enable_orjson,
             # Frontend features (always enabled)
             "enable_i18n": True,
             # Example CRUD (always disabled)
@@ -581,4 +590,7 @@ class ProjectConfig(BaseModel):
             "enable_rag_image_description": self.rag_features.enable_image_description
             if self.rag_features.enable_rag
             else False,
+            # Messaging channels
+            "use_telegram": self.use_telegram,
+            "use_slack": self.use_slack,
         }

@@ -290,7 +290,7 @@ def validate_webhook_url(
         )
 
     for _family, _type, _proto, _canonname, sockaddr in addr_infos:
-        ip_str = sockaddr[0]
+        ip_str = str(sockaddr[0])
         if _is_ip_blocked(ip_str):
             raise SSRFBlockedError(
                 f"Webhook URL blocked: {hostname!r} resolves to private/internal "
